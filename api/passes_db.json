@@ -141,5 +141,29 @@
         "islem_saati": "10:53:42",
         "islem_tarihi": "2026-09-08",
         "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_7",
+        "user_id": 3,
+        "sicil_no": "PER-0003",
+        "ad_soyad": "Ahmet Yılmaz",
+        "departman": "Yazılım & AR-GE Dairesi",
+        "eposta": "ahmet@siberkon.gov.tr",
+        "islem_turu": "cikis",
+        "islem_saati": "10:58:44",
+        "islem_tarihi": "2026-09-08",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_8",
+        "user_id": 3,
+        "sicil_no": "PER-0003",
+        "ad_soyad": "Ahmet Yılmaz",
+        "departman": "Yazılım & AR-GE Dairesi",
+        "eposta": "ahmet@siberkon.gov.tr",
+        "islem_turu": "giris",
+        "islem_saati": "10:58:54",
+        "islem_tarihi": "2026-09-08",
+        "kapi": "Turnike #01"
     }
 ]
