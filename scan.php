@@ -445,6 +445,25 @@
                     <div class="scanner-container flex-grow-1" id="scanner-box">
                         <div id="terminal-reader"></div>
 
+                        <!-- Terminal Bakım / Mola Ekranı -->
+                        <div id="maintenance-overlay" class="d-none text-center p-4 text-light h-100 w-100 position-absolute top-0 start-0 d-flex flex-column align-items-center justify-content-center bg-dark bg-opacity-95" style="z-index: 15; backdrop-filter: blur(10px);">
+                            <div class="p-3 bg-danger bg-opacity-20 text-danger rounded-circle mb-3 border border-danger border-opacity-25" style="width: 76px; height: 76px; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem;">
+                                <i class="fa-solid fa-pause"></i>
+                            </div>
+                            <h4 class="fw-bold text-white mb-2">Terminal Bakım Modunda</h4>
+                            <p class="text-secondary small mb-4" style="max-width: 380px; line-height: 1.55;">
+                                Terminal Bakım Modunda - Yeniden Başlatmak İçin Yönetici QR Okutunuz veya aşağıdaki butonu kullanınız.
+                            </p>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-success btn-sm px-3 fw-bold shadow-sm" onclick="adminActionStartCamera()">
+                                    <i class="fa-solid fa-play me-1"></i> Kamerayı Tekrar Çalıştır
+                                </button>
+                                <a href="admin.php" class="btn btn-outline-light btn-sm px-3 fw-semibold">
+                                    <i class="fa-solid fa-chart-line me-1"></i> Yönetim Paneli
+                                </a>
+                            </div>
+                        </div>
+
                         <!-- Tam Ekrandan Çıkış Butonu -->
                         <button type="button" class="btn-camera-exit-fs" onclick="toggleFullScreen()">
                             <i class="fa-solid fa-compress"></i> Tam Ekrandan Çık (ESC)
@@ -523,6 +542,64 @@
 
         </div>
     </main>
+
+    <!-- YÖNETİCİ KİOSK KONTROL PANELİ MODALI -->
+    <div class="modal fade" id="adminControlModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="adminControlModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+            <div class="modal-content border-0 shadow-lg" style="background-color: #0f172a; color: #f8fafc; border-radius: 16px; border: 1px solid #334155;">
+                
+                <div class="modal-header border-bottom border-slate-700 px-4 py-3" style="border-color: #334155 !important;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 bg-warning bg-opacity-20 text-warning rounded border border-warning border-opacity-25 fs-4">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-white mb-0" id="adminControlModalLabel">Yönetici Kiosk Kontrol Paneli</h5>
+                            <small class="text-info font-monospace" id="admin-name-display">Master QR Yetkili Oturumu</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeAdminModal()"></button>
+                </div>
+
+                <div class="modal-body p-4 text-center">
+                    <div class="alert alert-warning bg-warning bg-opacity-10 border-warning border-opacity-25 text-warning-emphasis p-3 mb-4 rounded text-start small">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                        Terminal kontrol modundasınız. <strong>30 saniye</strong> işlem yapılmazsa güvenlik için menü kapatılıp tarama moduna dönülecektir.
+                    </div>
+
+                    <div class="d-grid gap-3">
+                        <!-- 1. Kamerayı Durdur / Terminali Askıya Al -->
+                        <button type="button" class="btn btn-danger p-3 fw-bold d-flex align-items-center justify-content-center gap-2" id="btn-admin-stop-cam" onclick="adminActionStopCamera()">
+                            <i class="fa-solid fa-video-slash fs-5"></i>
+                            <span>Kamerayı Durdur / Terminali Askıya Al</span>
+                        </button>
+
+                        <!-- 2. Kamerayı Başlat / Taramaya Devam Et -->
+                        <button type="button" class="btn btn-success p-3 fw-bold d-flex align-items-center justify-content-center gap-2" id="btn-admin-start-cam" onclick="adminActionStartCamera()">
+                            <i class="fa-solid fa-play fs-5"></i>
+                            <span>Kamerayı Başlat / Taramaya Devam Et</span>
+                        </button>
+
+                        <!-- 3. Yönetici Paneline Geç -->
+                        <button type="button" class="btn btn-primary p-3 fw-bold d-flex align-items-center justify-content-center gap-2" id="btn-admin-goto-panel" onclick="adminActionGotoPanel()">
+                            <i class="fa-solid fa-chart-line fs-5"></i>
+                            <span>Yönetici Paneline Geç (admin.php)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top border-slate-700 px-4 py-3 d-flex justify-content-between align-items-center" style="border-color: #334155 !important;">
+                    <div class="text-secondary small">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Otomatik Kapanma: <span id="admin-timer-text" class="fw-bold text-warning fs-6">30</span> sn
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3 text-light border-secondary" onclick="closeAdminModal()">
+                        <i class="fa-solid fa-xmark me-1"></i> Modalı Kapat
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
 
     <!-- JS Kütüphaneleri -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -816,6 +893,21 @@
                 });
                 const result = await response.json();
 
+                // YÖNETİCİ MASTER QR KONTROLÜ (Aşama 4)
+                if (result.status && result.is_admin) {
+                    playBeep(true);
+                    if (feedbackEl) {
+                        feedbackEl.innerHTML = `
+                            <span class="text-warning fw-bold">
+                                <i class="fa-solid fa-user-shield me-1"></i>
+                                YÖNETİCİ MASTER QR ALGILANDI: ${result.ad_soyad}
+                            </span>
+                        `;
+                    }
+                    showAdminModal(result.ad_soyad);
+                    return;
+                }
+
                 if (result.status && result.data) {
                     playBeep(true);
                     fetchRecentPasses();
@@ -888,6 +980,125 @@
                     isProcessing = false; 
                 });
             }
+        }
+
+        // ==============================================================================
+        // YÖNETİCİ KİOSK KONTROL PANELİ & KAMERA YÖNETİM MANTIĞI (Aşama 4)
+        // ==============================================================================
+        let adminModalInstance = null;
+        let adminTimerInterval = null;
+        let adminSecondsLeft = 30;
+
+        function showAdminModal(adminName = 'Yönetici Master') {
+            // Kamera taramasını geçici olarak dondur
+            try {
+                if (html5QrCode && isScanning) {
+                    html5QrCode.pause(true);
+                }
+            } catch (e) {}
+
+            const nameEl = document.getElementById('admin-name-display');
+            if (nameEl) nameEl.textContent = adminName + ' (Master QR Yetkisi)';
+
+            const modalEl = document.getElementById('adminControlModal');
+            if (modalEl) {
+                if (!adminModalInstance) {
+                    adminModalInstance = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+                }
+                adminModalInstance.show();
+            }
+
+            // 30 Saniyelik Otomatik Kapanma Sayacı
+            adminSecondsLeft = 30;
+            const timerTextEl = document.getElementById('admin-timer-text');
+            if (timerTextEl) timerTextEl.textContent = adminSecondsLeft;
+
+            if (adminTimerInterval) clearInterval(adminTimerInterval);
+            adminTimerInterval = setInterval(() => {
+                adminSecondsLeft--;
+                if (timerTextEl) timerTextEl.textContent = adminSecondsLeft;
+
+                if (adminSecondsLeft <= 0) {
+                    closeAdminModal();
+                }
+            }, 1000);
+        }
+
+        function closeAdminModal() {
+            if (adminTimerInterval) {
+                clearInterval(adminTimerInterval);
+                adminTimerInterval = null;
+            }
+
+            if (adminModalInstance) {
+                adminModalInstance.hide();
+            }
+
+            // Bakım modunda değilse tarayıcıyı devral
+            const mOverlay = document.getElementById('maintenance-overlay');
+            const isMaintenance = mOverlay && !mOverlay.classList.contains('d-none');
+
+            if (!isMaintenance) {
+                try {
+                    if (html5QrCode && isScanning) {
+                        html5QrCode.resume();
+                    }
+                } catch (e) {}
+            }
+
+            isProcessing = false;
+        }
+
+        function adminActionStopCamera() {
+            // 1. Kamerayı Durdur / Terminali Askıya Al
+            if (adminTimerInterval) {
+                clearInterval(adminTimerInterval);
+                adminTimerInterval = null;
+            }
+
+            if (adminModalInstance) {
+                adminModalInstance.hide();
+            }
+
+            try {
+                if (html5QrCode && isScanning) {
+                    html5QrCode.stop();
+                }
+            } catch (e) {}
+            isScanning = false;
+
+            const mOverlay = document.getElementById('maintenance-overlay');
+            if (mOverlay) {
+                mOverlay.classList.remove('d-none');
+            }
+
+            updateScannerStatus(false, "Terminal Bakım Modunda - Yeniden Başlatmak İçin Yönetici QR Okutunuz");
+            isProcessing = false;
+        }
+
+        function adminActionStartCamera() {
+            // 2. Kamerayı Başlat / Taramaya Devam Et
+            if (adminTimerInterval) {
+                clearInterval(adminTimerInterval);
+                adminTimerInterval = null;
+            }
+
+            if (adminModalInstance) {
+                adminModalInstance.hide();
+            }
+
+            const mOverlay = document.getElementById('maintenance-overlay');
+            if (mOverlay) {
+                mOverlay.classList.add('d-none');
+            }
+
+            switchCameraToId(currentCameraId || 'facingMode_user');
+            isProcessing = false;
+        }
+
+        function adminActionGotoPanel() {
+            // 3. Yönetici Paneline Geç (admin.php)
+            window.location.href = 'admin.php';
         }
 
         function updateScannerStatus(isActive, message) {

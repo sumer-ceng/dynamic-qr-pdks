@@ -196,7 +196,37 @@ try {
     ");
     $consumeStmt->execute([$gelenHash]);
 
-    // 8. OTOMATİK YÖN TESPİTİ (Giriş / Çıkış)
+    // 8. ROL AYRIMI (YÖNETİCİ MASTER QR KONTROLÜ)
+    $isAdmin = ($user['rol'] === 'admin');
+
+    if ($isAdmin) {
+        // Admin Master QR: hareketler tablosuna zorunlu geçiş yazmadan yönetici bayrağı dön
+        echo json_encode([
+            'status'     => true,
+            'is_admin'   => true,
+            'ad_soyad'   => $user['ad_soyad'],
+            'islem'      => 'Yönetici Master QR',
+            'islem_turu' => 'admin_master',
+            'saat'       => date('H:i'),
+            'tarih'      => date('d.m.Y'),
+            'message'    => "Yönetici Master QR Algılandı!",
+            'data'       => [
+                'id'           => 'pass_admin_' . time(),
+                'user_id'      => $userId,
+                'sicil_no'     => 'ADM-' . str_pad((string)$userId, 4, '0', STR_PAD_LEFT),
+                'ad_soyad'     => $user['ad_soyad'],
+                'departman'    => $user['departman'] ?? 'Yönetim & Denetim',
+                'eposta'       => $user['eposta'],
+                'islem_turu'   => 'admin_master',
+                'islem_saati'  => date('H:i:s'),
+                'islem_tarihi' => date('d.m.Y'),
+                'kapi'         => $deviceInfo
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // 9. OTOMATİK YÖN TESPİTİ (Giriş / Çıkış)
     $lastPassStmt = $db->prepare("
         SELECT islem_turu 
         FROM hareketler 
