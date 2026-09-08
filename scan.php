@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>T.C. Siberkon Teknoloji - Kapı Geçiş Terminali (PDKS)</title>
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
 
     <!-- Google Fonts (Plus Jakarta Sans & Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -378,12 +379,15 @@
     <!-- Kurumsal Antet Başlığı -->
     <header class="kiosk-header d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div class="d-flex align-items-center gap-3">
-            <div class="header-seal-icon">
-                <i class="fa-solid fa-landmark"></i>
+            <div class="bg-white rounded p-1 shadow-sm d-flex align-items-center justify-content-center">
+                <img src="assets/img/logo.png" alt="Siberkon Logo" height="42" class="rounded">
             </div>
             <div>
                 <div class="d-flex align-items-center gap-2">
-                    <h1 class="kiosk-title-main">PERSONEL DEVAM KONTROL SİSTEMİ</h1>
+                    <h1 class="kiosk-title-main m-0 d-flex align-items-center gap-2">
+                        <span>Siberkon</span>
+                        <span class="fw-normal text-white-50 fs-6">PDKS</span>
+                    </h1>
                     <span class="terminal-badge">KAPI GEÇİŞ TERMİNALİ #01</span>
                 </div>
                 <div class="kiosk-title-sub">T.C. Siberkon Teknoloji A.Ş. — Kontrol Noktası İşletim Masası</div>

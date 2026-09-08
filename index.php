@@ -11,6 +11,7 @@ session_start();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>T.C. Siberkon Teknoloji - PDKS Kurumsal Sistem Portalı</title>
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
 
     <!-- Google Fonts (Plus Jakarta Sans & Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -131,12 +132,15 @@ session_start();
 
     <header class="portal-header d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-3">
-            <div class="p-2 bg-white bg-opacity-10 rounded border border-white border-opacity-25 text-white fs-4">
-                <i class="fa-solid fa-landmark"></i>
+            <div class="p-1 bg-white rounded border shadow-sm d-flex align-items-center justify-content-center">
+                <img src="assets/img/logo.png" alt="Siberkon Logo" height="42" class="rounded">
             </div>
             <div>
-                <h1 class="h5 mb-0 fw-bold text-white">T.C. SİBERKON TEKNOLOJİ A.Ş.</h1>
-                <small class="text-white text-opacity-75">Personel Devam Kontrol Sistemi (PDKS) Kurumsal Portalı</small>
+                <h1 class="h5 mb-0 fw-bold text-white d-flex align-items-center gap-2">
+                    <span>Siberkon</span>
+                    <span class="fw-normal text-white-50 fs-6">| PDKS Kurumsal Portalı</span>
+                </h1>
+                <small class="text-white text-opacity-75">T.C. Siberkon Teknoloji A.Ş. Personel Devam Kontrol Sistemi</small>
             </div>
         </div>
         <div>

@@ -25,6 +25,7 @@ $initials = mb_strtoupper($initials, 'UTF-8');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>T.C. Siberkon Teknoloji - PDKS Yönetim ve Denetim Masası</title>
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
 
     <!-- Google Fonts (Plus Jakarta Sans & Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -455,12 +456,12 @@ $initials = mb_strtoupper($initials, 'UTF-8');
         
         <!-- Sol Kenar Çubuğu (Sidebar) -->
         <aside class="app-sidebar">
-            <div class="sidebar-brand">
-                <div class="sidebar-logo">
-                    <i class="fa-solid fa-landmark"></i>
+            <div class="sidebar-brand d-flex align-items-center gap-2">
+                <div class="bg-white rounded p-1 shadow-sm d-flex align-items-center justify-content-center">
+                    <img src="assets/img/logo.png" alt="Siberkon Logo" height="36" class="rounded">
                 </div>
                 <div>
-                    <h2 class="sidebar-title">SİBERKON PDKS</h2>
+                    <h2 class="sidebar-title m-0" style="font-size: 1.15rem; font-weight: 800;">Siberkon PDKS</h2>
                     <div class="sidebar-subtitle">Yönetim ve Denetim Masası</div>
                 </div>
             </div>

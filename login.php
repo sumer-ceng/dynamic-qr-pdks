@@ -17,7 +17,8 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T.C. Siberkon Teknoloji - Kurumsal Personel Giriş Portalı</title>
+    <title>T.C. Siberkon Teknoloji - PDKS Kurumsal Giriş Portalı</title>
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
 
     <!-- Google Fonts (Plus Jakarta Sans & Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -275,12 +276,13 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     <div class="login-wrapper">
         
         <!-- Kurumsal T.C. / Şirket Başlık Alanı -->
-        <div class="header-seal">
-            <div class="seal-icon-box">
-                <i class="fa-solid fa-landmark"></i>
+        <div class="header-seal text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center p-2 rounded mb-2 bg-white shadow-sm border">
+                <img src="assets/img/logo.png" alt="Siberkon Logo" height="52" class="rounded me-2">
+                <span class="fs-2 fw-bold" style="color: var(--primary-navy); font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.5px;">Siberkon</span>
             </div>
-            <div class="institution-title">T.C. Siberkon Teknoloji A.Ş.</div>
-            <h1 class="system-title">Personel Giriş Portalı</h1>
+            <div class="institution-title text-muted fs-6 mb-1">T.C. Siberkon Teknoloji A.Ş.</div>
+            <h1 class="system-title mt-0">Personel Giriş Portalı</h1>
             <p class="system-subtitle">Personel Devam Kontrol Sistemi (PDKS) Kurumsal Kimlik Doğrulama</p>
         </div>
 

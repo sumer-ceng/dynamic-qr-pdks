@@ -53,6 +53,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>T.C. Siberkon Teknoloji - Personel Kimlik Kartı & Geçiş Portalı</title>
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
 
     <!-- Google Fonts (Plus Jakarta Sans & Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -508,10 +509,15 @@ try {
             <!-- Kart Üst Anteti -->
             <div class="badge-top-banner">
                 <div class="institution-box">
-                    <i class="fa-solid fa-landmark crest-icon"></i>
+                    <div class="bg-white rounded p-1 d-flex align-items-center justify-content-center shadow-sm">
+                        <img src="assets/img/logo.png" alt="Siberkon Logo" height="30" class="rounded">
+                    </div>
                     <div class="institution-text">
-                        <div class="inst-title">T.C. Siberkon Teknoloji A.Ş.</div>
-                        <div class="inst-subtitle">Personel Devam Kontrol Sistemi (PDKS)</div>
+                        <div class="inst-title d-flex align-items-center gap-1">
+                            <span class="fw-extrabold fs-6">Siberkon</span>
+                            <span class="fw-normal text-white-50 ms-1">PDKS</span>
+                        </div>
+                        <div class="inst-subtitle">T.C. Siberkon Teknoloji Personel Kimlik Kartı</div>
                     </div>
                 </div>
                 <button class="btn-badge-logout" id="btn-logout" title="Güvenli Çıkış Yap">
