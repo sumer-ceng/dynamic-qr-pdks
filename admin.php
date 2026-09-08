@@ -1,7 +1,7 @@
 <?php
 /**
  * Siberkon PDKS - Kurumsal Yönetim & Raporlama Paneli
- * Resmi Kurum / Kamu Standardı Teması
+ * Aşama 5: Canlı Akış, KPI İstatistikleri ve Excel Rapor Motoru Entegrasyonu
  */
 session_start();
 
@@ -18,6 +18,37 @@ $initials = (count($nameParts) >= 2)
     ? mb_substr($nameParts[0], 0, 1, 'UTF-8') . mb_substr(end($nameParts), 0, 1, 'UTF-8')
     : mb_substr($adminName, 0, 2, 'UTF-8');
 $initials = mb_strtoupper($initials, 'UTF-8');
+
+// Veritabanından Başlangıç Hareketlerini Çek
+require_once __DIR__ . '/config/db.php';
+$maxLastId = 0;
+$initialPasses = [];
+
+try {
+    $db = Database::getInstance()->getConnection();
+    $stmtPass = $db->query("
+        SELECT 
+            h.id, 
+            h.kullanici_id, 
+            h.islem_turu, 
+            h.islem_zamani, 
+            h.terminal_id, 
+            h.ip_adresi,
+            k.ad_soyad, 
+            k.departman, 
+            k.eposta
+        FROM hareketler h
+        JOIN kullanicilar k ON h.kullanici_id = k.id
+        ORDER BY h.id DESC
+        LIMIT 50
+    ");
+    $initialPasses = $stmtPass->fetchAll();
+    if (!empty($initialPasses)) {
+        $maxLastId = (int)max(array_column($initialPasses, 'id'));
+    }
+} catch (Exception $e) {
+    // Fallback
+}
 ?>
 <!DOCTYPE html>
 <html lang="tr">
@@ -62,125 +93,92 @@ $initials = mb_strtoupper($initials, 'UTF-8');
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-page);
             color: var(--text-body);
-            min-height: 100vh;
             margin: 0;
-            overflow-x: hidden;
+            padding: 0;
+            min-height: 100vh;
         }
 
         .app-wrapper {
             display: flex;
-            width: 100%;
             min-height: 100vh;
         }
 
-        /* Kurumsal Koyu Lacivert Kenar Çubuğu (Sidebar) */
+        /* Sidebar Stil */
         .app-sidebar {
             width: 260px;
-            background-color: var(--primary-navy);
-            border-right: 1px solid var(--primary-dark);
+            background-color: var(--primary-dark);
+            color: #FFFFFF;
+            flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            flex-shrink: 0;
-            color: #FFFFFF;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .sidebar-brand {
-            padding: 20px 22px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .sidebar-logo {
-            width: 38px;
-            height: 38px;
-            background-color: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #FFFFFF;
-            font-size: 1.1rem;
+            padding: 20px 18px;
+            background-color: rgba(0, 0, 0, 0.15);
+            border-bottom: 3px solid #C5A880;
         }
 
         .sidebar-title {
             font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.95rem;
             font-weight: 800;
-            font-size: 1rem;
             color: #FFFFFF;
-            margin: 0;
-            letter-spacing: 0.3px;
-            line-height: 1.2;
+            letter-spacing: 0.5px;
         }
 
         .sidebar-subtitle {
-            font-size: 0.68rem;
+            font-size: 0.72rem;
             color: #CBD5E1;
-            margin: 2px 0 0;
         }
 
         .sidebar-menu {
-            padding: 16px 10px;
             list-style: none;
+            padding: 16px 10px;
             margin: 0;
             flex-grow: 1;
         }
 
         .menu-category {
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             font-weight: 700;
-            color: #94A3B8;
+            color: #64748B;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            padding: 10px 12px 4px;
-        }
-
-        .nav-item-custom {
-            margin-bottom: 2px;
+            padding: 12px 10px 4px;
         }
 
         .nav-link-custom {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 9px 12px;
-            color: #E2E8F0;
-            border-radius: 4px;
-            text-decoration: none;
-            font-size: 0.86rem;
-            font-weight: 500;
-            transition: all 0.15s ease;
-        }
-
-        .nav-link-custom i {
-            font-size: 1rem;
-            width: 20px;
-            text-align: center;
+            padding: 10px 12px;
             color: #CBD5E1;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-radius: 4px;
+            transition: all 0.15s ease;
+            margin-bottom: 2px;
         }
 
         .nav-link-custom:hover {
+            background-color: rgba(255, 255, 255, 0.08);
             color: #FFFFFF;
-            background-color: rgba(255, 255, 255, 0.1);
         }
 
         .nav-link-custom.active {
+            background-color: var(--primary-navy);
             color: #FFFFFF;
-            background-color: #0F2942;
-            border-left: 3px solid #C5A880;
             font-weight: 600;
-        }
-
-        .nav-link-custom.active i {
-            color: #FFFFFF;
+            border-left: 3px solid #C5A880;
         }
 
         .sidebar-footer {
-            padding: 14px 18px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            background-color: #0F2942;
+            padding: 14px 16px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -195,30 +193,28 @@ $initials = mb_strtoupper($initials, 'UTF-8');
         .admin-avatar {
             width: 34px;
             height: 34px;
-            border-radius: 3px;
-            background-color: #2E7D32;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            background-color: #C5A880;
+            color: var(--primary-dark);
+            font-weight: 800;
+            font-size: 0.85rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            font-size: 0.82rem;
-            color: #FFFFFF;
         }
 
-        /* Ana İçerik Bölgesi */
+        /* Content Area */
         .main-content {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            min-width: 0;
-            background-color: var(--bg-page);
+            overflow-x: hidden;
         }
 
         .top-navbar {
             background-color: #FFFFFF;
             border-bottom: 1px solid var(--border-color);
-            padding: 12px 28px;
+            padding: 12px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -226,99 +222,74 @@ $initials = mb_strtoupper($initials, 'UTF-8');
 
         .navbar-search {
             position: relative;
-            width: 300px;
+            width: 320px;
         }
 
         .navbar-search input {
-            background-color: #F8FAFC;
+            width: 100%;
+            padding: 6px 12px 6px 34px;
+            font-size: 0.82rem;
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            padding: 7px 12px 7px 34px;
-            font-size: 0.84rem;
-            color: var(--text-heading);
-            width: 100%;
-        }
-
-        .navbar-search input:focus {
-            outline: none;
-            border-color: var(--primary-navy);
-            background-color: #FFFFFF;
+            background-color: #F8FAFC;
         }
 
         .navbar-search i {
             position: absolute;
-            left: 11px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--neutral-steel);
-            font-size: 0.8rem;
-        }
-
-        .top-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .clock-badge-top {
-            background-color: #F8FAFC;
-            border: 1px solid var(--border-color);
-            color: var(--primary-navy);
-            font-family: monospace;
-            font-weight: 700;
-            font-size: 0.82rem;
-            padding: 5px 12px;
-            border-radius: 4px;
+            font-size: 0.85rem;
         }
 
         .content-body {
-            padding: 24px 28px;
-        }
-
-        .page-header {
-            margin-bottom: 20px;
+            padding: 24px;
+            flex-grow: 1;
         }
 
         .page-title {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 800;
-            color: var(--primary-navy);
+            color: var(--text-heading);
             margin: 0;
         }
 
         .page-subtitle {
             font-size: 0.82rem;
             color: var(--neutral-steel);
-            margin-top: 2px;
+            margin: 2px 0 0;
         }
 
-        /* Sade ve Keskin Kurumsal KPI Kartları */
+        /* KPI Kartları */
         .kpi-card-corporate {
-            background: var(--bg-card);
+            background: #FFFFFF;
             border: 1px solid var(--border-color);
-            border-left: 4px solid var(--primary-navy);
-            border-radius: 4px;
-            padding: 16px 20px;
+            border-radius: 6px;
+            padding: 18px 20px;
             box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card-corporate::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
             height: 100%;
+            background-color: var(--primary-navy);
         }
 
-        .kpi-card-corporate.kpi-present {
-            border-left-color: #2E7D32;
-        }
-
-        .kpi-card-corporate.kpi-active {
-            border-left-color: #0284C7;
-        }
-
-        .kpi-card-corporate.kpi-absent {
-            border-left-color: #C53030;
-        }
+        .kpi-present::before { background-color: #2E7D32; }
+        .kpi-active::before { background-color: #0284C7; }
+        .kpi-absent::before { background-color: #C62828; }
 
         .kpi-title {
-            font-size: 0.78rem;
-            font-weight: 600;
+            font-size: 0.76rem;
+            font-weight: 700;
             color: var(--neutral-steel);
             text-transform: uppercase;
             letter-spacing: 0.4px;
@@ -327,126 +298,92 @@ $initials = mb_strtoupper($initials, 'UTF-8');
 
         .kpi-value {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 1.75rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: var(--text-heading);
             line-height: 1;
+            margin-bottom: 6px;
         }
 
         .kpi-subtext {
             font-size: 0.74rem;
-            color: var(--secondary-slate);
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            color: var(--neutral-steel);
+            font-weight: 500;
         }
 
-        /* Kurumsal Tablo Kartı */
+        /* Tablo Kartı */
         .table-card-corporate {
-            background: var(--bg-card);
+            background-color: #FFFFFF;
             border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 20px 22px;
-            margin-top: 22px;
+            border-radius: 6px;
             box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+            padding: 20px;
+            margin-top: 20px;
         }
 
         .table-header-title {
-            font-size: 1rem;
-            font-weight: 700;
             font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
             color: var(--primary-navy);
-            margin-bottom: 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
             border-bottom: 2px solid var(--primary-navy);
-            padding-bottom: 10px;
-        }
-
-        .export-btn-group .btn {
-            font-size: 0.78rem;
-            font-weight: 600;
-            border-radius: 3px;
-            padding: 4px 10px;
-        }
-
-        /* DataTables Kurumsal Tablo Stili */
-        table.dataTable {
-            border: 1px solid var(--border-color) !important;
-            border-collapse: collapse !important;
-            font-size: 0.85rem;
-        }
-
-        table.dataTable thead th {
-            background-color: #F8FAFC !important;
-            color: var(--primary-navy) !important;
-            font-weight: 700 !important;
-            border-bottom: 2px solid var(--border-color) !important;
-            padding: 10px 14px !important;
-        }
-
-        table.dataTable tbody td {
-            border-bottom: 1px solid #E2E8F0 !important;
-            padding: 10px 14px !important;
-            vertical-align: middle;
-            color: var(--text-heading);
-        }
-
-        table.dataTable tbody tr:nth-child(even) {
-            background-color: #F8FAFC !important;
-        }
-
-        table.dataTable tbody tr:hover {
-            background-color: #F1F5F9 !important;
         }
 
         .avatar-initial-box {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
             background-color: var(--primary-navy);
             color: #FFFFFF;
-            border-radius: 3px;
-            display: flex;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            font-size: 0.78rem;
         }
 
         .badge-corporate-in {
             background-color: #E8F5E9;
             color: #1B4D3E;
             border: 1px solid #C8E6C9;
-            font-weight: 700;
-            font-size: 0.72rem;
             padding: 3px 8px;
             border-radius: 3px;
+            font-size: 0.72rem;
+            font-weight: 700;
         }
 
         .badge-corporate-out {
-            background-color: #E0F2FE;
-            color: #0369A1;
-            border: 1px solid #BAE6FD;
-            font-weight: 700;
-            font-size: 0.72rem;
+            background-color: #FFEBEE;
+            color: #8B0000;
+            border: 1px solid #FFCDD2;
             padding: 3px 8px;
             border-radius: 3px;
+            font-size: 0.72rem;
+            font-weight: 700;
         }
 
-        .dataTables_wrapper .dataTables_length select,
-        .dataTables_wrapper .dataTables_filter input {
-            border: 1px solid var(--border-color) !important;
-            border-radius: 3px !important;
-            font-size: 0.82rem;
-            padding: 4px 8px;
+        /* Canlı Akış Yeşil Parlama Animasyonu */
+        @keyframes highlightGreen {
+            0% { background-color: #d1e7dd !important; }
+            100% { background-color: transparent; }
+        }
+        .row-highlight-new {
+            animation: highlightGreen 3s ease-out;
         }
 
-        .page-item.active .page-link {
-            background-color: var(--primary-navy) !important;
-            border-color: var(--primary-navy) !important;
-            color: #FFFFFF !important;
+        .clock-badge-top {
+            font-family: monospace;
+            font-weight: 700;
+            color: var(--primary-navy);
+            background-color: #F1F5F9;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.84rem;
         }
     </style>
 </head>
@@ -495,15 +432,9 @@ $initials = mb_strtoupper($initials, 'UTF-8');
                     </a>
                 </li>
                 <li class="nav-item-custom">
-                    <a href="#" class="nav-link-custom" onclick="alert('Resmi geçiş ve puantaj raporları modülü.'); return false;">
-                        <i class="fa-solid fa-file-contract"></i>
-                        <span>Puantaj & Geçiş Raporları</span>
-                    </a>
-                </li>
-                <li class="nav-item-custom">
-                    <a href="#" class="nav-link-custom" onclick="alert('Sistem ve tolerans ayarları modülü.'); return false;">
-                        <i class="fa-solid fa-sliders"></i>
-                        <span>Sistem Parametreleri</span>
+                    <a href="#" class="nav-link-custom" onclick="exportToExcel(); return false;">
+                        <i class="fa-solid fa-file-excel text-success"></i>
+                        <span>Puantaj & Excel Raporları</span>
                     </a>
                 </li>
             </ul>
@@ -529,10 +460,10 @@ $initials = mb_strtoupper($initials, 'UTF-8');
             <header class="top-navbar">
                 <div class="navbar-search">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" placeholder="Sicil, personel adı veya departman ara...">
+                    <input type="text" id="global-search-input" placeholder="Sicil, personel adı veya departman ara...">
                 </div>
 
-                <div class="top-actions">
+                <div class="top-actions d-flex align-items-center gap-3">
                     <!-- Canlı Saat -->
                     <div class="clock-badge-top" id="top-live-clock">
                         <i class="fa-regular fa-clock me-1 text-secondary"></i> 00:00:00
@@ -548,7 +479,7 @@ $initials = mb_strtoupper($initials, 'UTF-8');
             <!-- Dashboard Gövdesi -->
             <div class="content-body">
                 
-                <div class="page-header d-flex align-items-center justify-content-between">
+                <div class="page-header d-flex align-items-center justify-content-between mb-3">
                     <div>
                         <h1 class="page-title">Kurumsal Devam & Geçiş Denetimi</h1>
                         <p class="page-subtitle">T.C. Mevzuat Standartlarında Canlı PDKS İzleme ve Raporlama Paneli</p>
@@ -566,8 +497,8 @@ $initials = mb_strtoupper($initials, 'UTF-8');
                     <div class="col-12 col-sm-6 col-xl-3">
                         <div class="kpi-card-corporate">
                             <div class="kpi-title">Kayıtlı Toplam Personel</div>
-                            <div class="kpi-value" id="kpi-total-staff">148</div>
-                            <div class="kpi-subtext">
+                            <div class="kpi-value" id="kpi-total-staff">--</div>
+                            <div class="kpi-subtext text-secondary">
                                 <i class="fa-solid fa-circle-check text-success"></i> Aktif Görevli Kadro
                             </div>
                         </div>
@@ -576,9 +507,9 @@ $initials = mb_strtoupper($initials, 'UTF-8');
                     <div class="col-12 col-sm-6 col-xl-3">
                         <div class="kpi-card-corporate kpi-present">
                             <div class="kpi-title">Bugün Giriş Yapanlar</div>
-                            <div class="kpi-value text-success" id="kpi-today-present">124</div>
+                            <div class="kpi-value text-success" id="kpi-today-present">--</div>
                             <div class="kpi-subtext text-success">
-                                <i class="fa-solid fa-arrow-trend-up"></i> %83.7 Katılım Oranı
+                                <i class="fa-solid fa-arrow-trend-up"></i> Canlı Turnike Katılımı
                             </div>
                         </div>
                     </div>
@@ -586,7 +517,7 @@ $initials = mb_strtoupper($initials, 'UTF-8');
                     <div class="col-12 col-sm-6 col-xl-3">
                         <div class="kpi-card-corporate kpi-active">
                             <div class="kpi-title">Şu An Binada / Ofiste</div>
-                            <div class="kpi-value text-primary" id="kpi-currently-inside">98</div>
+                            <div class="kpi-value text-primary" id="kpi-currently-inside">--</div>
                             <div class="kpi-subtext text-primary">
                                 <i class="fa-solid fa-door-open"></i> Aktif Vardiya Durumu
                             </div>
@@ -596,7 +527,7 @@ $initials = mb_strtoupper($initials, 'UTF-8');
                     <div class="col-12 col-sm-6 col-xl-3">
                         <div class="kpi-card-corporate kpi-absent">
                             <div class="kpi-title">İzinli / Henüz Gelmedi</div>
-                            <div class="kpi-value text-danger" id="kpi-absent-count">24</div>
+                            <div class="kpi-value text-danger" id="kpi-absent-count">--</div>
                             <div class="kpi-subtext text-danger">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Mazeretli / Beklenen
                             </div>
@@ -605,27 +536,63 @@ $initials = mb_strtoupper($initials, 'UTF-8');
 
                 </div>
 
-                <!-- Tablo Kartı -->
+                <!-- Tablo Kartı & Filtreleme Toolbar -->
                 <div class="table-card-corporate">
+                    
                     <div class="table-header-title">
                         <div>
-                            <i class="fa-solid fa-file-lines me-1"></i> Günlük Turnike Geçiş Hareketleri
+                            <i class="fa-solid fa-file-lines me-1"></i> Canlı Turnike Geçiş Hareketleri
                         </div>
                         <div class="export-btn-group">
-                            <button type="button" class="btn btn-outline-secondary" onclick="alert('Resmi Excel dökümü oluşturuluyor...');">
-                                <i class="fa-solid fa-file-excel text-success me-1"></i> Excel Dökümü
+                            <button type="button" class="btn btn-outline-success btn-sm fw-bold" onclick="exportToExcel()">
+                                <i class="fa-solid fa-file-excel me-1"></i> Excel Olarak İndir
                             </button>
-                            <button type="button" class="btn btn-outline-secondary ms-1" onclick="window.print();">
+                            <button type="button" class="btn btn-outline-secondary btn-sm ms-1" onclick="window.print();">
                                 <i class="fa-solid fa-print me-1"></i> Yazdır
                             </button>
                         </div>
                     </div>
 
+                    <!-- Aşama 5: Tarih ve Departman Filtre Barı -->
+                    <div class="row g-2 mb-3 align-items-center bg-light p-2 rounded border border-slate-200">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">
+                                <i class="fa-regular fa-calendar me-1"></i> Başlangıç Tarihi
+                            </label>
+                            <input type="date" class="form-control form-control-sm" id="filter-start-date" value="<?= date('Y-m-01') ?>">
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">
+                                <i class="fa-regular fa-calendar me-1"></i> Bitiş Tarihi
+                            </label>
+                            <input type="date" class="form-control form-control-sm" id="filter-end-date" value="<?= date('Y-m-d') ?>">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-bold text-secondary mb-1">
+                                <i class="fa-solid fa-building me-1"></i> Departman Filtresi
+                            </label>
+                            <select class="form-select form-select-sm" id="filter-dept">
+                                <option value="tum">Tüm Departmanlar</option>
+                                <option value="Yazılım & AR-GE">Yazılım & AR-GE</option>
+                                <option value="İnsan Kaynakları">İnsan Kaynakları</option>
+                                <option value="Bilgi İşlem & Güvenlik">Bilgi İşlem & Güvenlik</option>
+                                <option value="Finans & Muhasebe">Finans & Muhasebe</option>
+                                <option value="Saha Operasyonları">Saha Operasyonları</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2 d-flex align-items-end pt-3">
+                            <button type="button" class="btn btn-success btn-sm w-100 fw-bold shadow-sm" onclick="exportToExcel()">
+                                <i class="fa-solid fa-file-excel me-1"></i> Excel Al
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Canlı DataTables Tablosu -->
                     <div class="table-responsive">
                         <table id="recent-passes-table" class="table table-bordered table-striped align-middle w-100">
                             <thead>
                                 <tr>
-                                    <th style="width: 45px;">S.No</th>
+                                    <th style="width: 55px;">ID</th>
                                     <th>Personel Bilgisi</th>
                                     <th>Departman</th>
                                     <th>İşlem Türü</th>
@@ -635,91 +602,46 @@ $initials = mb_strtoupper($initials, 'UTF-8');
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td class="text-center font-monospace">1</td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-initial-box me-2">AY</div>
-                                            <div>
-                                                <div class="fw-bold">Ahmet Yılmaz</div>
-                                                <div class="text-muted font-monospace" style="font-size: 0.72rem;">Sicil: PER-0002</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>Yazılım & AR-GE</td>
-                                    <td><span class="badge-corporate-in"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i> GİRİŞ</span></td>
-                                    <td class="font-monospace fw-bold">08:54:12</td>
-                                    <td>Ana Giriş Turnikesi #01</td>
-                                    <td><span class="badge bg-light text-success border border-success border-opacity-50">HMAC Onaylı</span></td>
-                                </tr>
-                                <tr>
-                                    <td class="text-center font-monospace">2</td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-initial-box me-2" style="background-color: #2E7D32;">MK</div>
-                                            <div>
-                                                <div class="fw-bold">Mehmet Kaya</div>
-                                                <div class="text-muted font-monospace" style="font-size: 0.72rem;">Sicil: PER-0003</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>İnsan Kaynakları</td>
-                                    <td><span class="badge-corporate-in"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i> GİRİŞ</span></td>
-                                    <td class="font-monospace fw-bold">09:02:45</td>
-                                    <td>Ana Giriş Turnikesi #01</td>
-                                    <td><span class="badge bg-light text-success border border-success border-opacity-50">HMAC Onaylı</span></td>
-                                </tr>
-                                <tr>
-                                    <td class="text-center font-monospace">3</td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-initial-box me-2" style="background-color: #0284C7;">AD</div>
-                                            <div>
-                                                <div class="fw-bold">Ayşe Demir</div>
-                                                <div class="text-muted font-monospace" style="font-size: 0.72rem;">Sicil: PER-0004</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>Finans & Muhasebe</td>
-                                    <td><span class="badge-corporate-out"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i> ÇIKIŞ</span></td>
-                                    <td class="font-monospace fw-bold">12:30:10</td>
-                                    <td>Yemekhane Turnikesi</td>
-                                    <td><span class="badge bg-light text-primary border border-primary border-opacity-50">HMAC Onaylı</span></td>
-                                </tr>
-                                <tr>
-                                    <td class="text-center font-monospace">4</td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-initial-box me-2" style="background-color: #64748B;">FC</div>
-                                            <div>
-                                                <div class="fw-bold">Fatma Çelik</div>
-                                                <div class="text-muted font-monospace" style="font-size: 0.72rem;">Sicil: PER-0005</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>Pazarlama & İletişim</td>
-                                    <td><span class="badge-corporate-in"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i> GİRİŞ</span></td>
-                                    <td class="font-monospace fw-bold">08:45:00</td>
-                                    <td>B Blok Turnikesi</td>
-                                    <td><span class="badge bg-light text-success border border-success border-opacity-50">HMAC Onaylı</span></td>
-                                </tr>
-                                <tr>
-                                    <td class="text-center font-monospace">5</td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-initial-box me-2" style="background-color: #8B0000;">EA</div>
-                                            <div>
-                                                <div class="fw-bold">Emre Arslan</div>
-                                                <div class="text-muted font-monospace" style="font-size: 0.72rem;">Sicil: PER-0006</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>Saha Operasyonları</td>
-                                    <td><span class="badge-corporate-out"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i> ÇIKIŞ</span></td>
-                                    <td class="font-monospace fw-bold">11:15:22</td>
-                                    <td>Ana Giriş Turnikesi #01</td>
-                                    <td><span class="badge bg-light text-primary border border-primary border-opacity-50">HMAC Onaylı</span></td>
-                                </tr>
+                                <?php if (empty($initialPasses)): ?>
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">Henüz veritabanında kayıtlı geçiş bulunmuyor.</td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($initialPasses as $pass): ?>
+                                        <?php 
+                                            $empId = 'PER-' . str_pad((string)$pass['kullanici_id'], 4, '0', STR_PAD_LEFT);
+                                            $isGiris = ($pass['islem_turu'] === 'giris');
+                                            $partNames = explode(' ', trim($pass['ad_soyad']));
+                                            $pInitials = (count($partNames) >= 2) 
+                                                ? mb_substr($partNames[0], 0, 1, 'UTF-8') . mb_substr(end($partNames), 0, 1, 'UTF-8')
+                                                : mb_substr($pass['ad_soyad'], 0, 2, 'UTF-8');
+                                            $pInitials = mb_strtoupper($pInitials, 'UTF-8');
+                                        ?>
+                                        <tr data-id="<?= $pass['id'] ?>">
+                                            <td class="text-center font-monospace"><?= $pass['id'] ?></td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-initial-box me-2" style="background-color: <?= $isGiris ? '#1A365D' : '#0284C7' ?>;"><?= htmlspecialchars($pInitials) ?></div>
+                                                    <div>
+                                                        <div class="fw-bold"><?= htmlspecialchars($pass['ad_soyad']) ?></div>
+                                                        <div class="text-muted font-monospace" style="font-size: 0.72rem;">Sicil: <?= $empId ?></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td><?= htmlspecialchars($pass['departman'] ?? 'Genel Kadro') ?></td>
+                                            <td>
+                                                <?php if ($isGiris): ?>
+                                                    <span class="badge-corporate-in"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i> GİRİŞ</span>
+                                                <?php else: ?>
+                                                    <span class="badge-corporate-out"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i> ÇIKIŞ</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="font-monospace fw-bold"><?= date('H:i:s', strtotime($pass['islem_zamani'])) ?></td>
+                                            <td><?= htmlspecialchars($pass['terminal_id'] ?? 'Turnike #01') ?></td>
+                                            <td><span class="badge bg-light text-success border border-success border-opacity-50">HMAC Onaylı</span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -739,27 +661,115 @@ $initials = mb_strtoupper($initials, 'UTF-8');
     <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
+        let lastFeedId = <?= (int)$maxLastId ?>;
+        let dataTableInstance = null;
+
+        // 1. EXCEL DÖKÜMÜ İNDİRME (action=export_excel)
+        function exportToExcel() {
+            const startDate = $('#filter-start-date').val() || '';
+            const endDate = $('#filter-end-date').val() || '';
+            const dept = $('#filter-dept').val() || 'tum';
+
+            const exportUrl = 'api/raporlar.php?action=export_excel' +
+                '&baslangic_tarihi=' + encodeURIComponent(startDate) +
+                '&bitis_tarihi=' + encodeURIComponent(endDate) +
+                '&departman=' + encodeURIComponent(dept);
+
+            window.location.href = exportUrl;
+        }
+
+        // 2. 4 KPI KARTINI GÜNCELLEME (action=kpi - Her 10 saniye)
+        async function updateKPI() {
+            try {
+                const response = await fetch('api/raporlar.php?action=kpi');
+                const res = await response.json();
+
+                if (res.status && res.kpi) {
+                    $('#kpi-total-staff').text(res.kpi.toplam_personel);
+                    $('#kpi-today-present').text(res.kpi.bugun_gelenler);
+                    $('#kpi-currently-inside').text(res.kpi.iceride_olanlar);
+                    $('#kpi-absent-count').text(res.kpi.gelmeyenler);
+                }
+            } catch (e) {
+                console.warn('KPI Güncelleme Hatası:', e);
+            }
+        }
+
+        // 3. CANLI AKIŞ POLLING (action=live_feed - Her 3 saniye)
+        async function pollLiveFeed() {
+            try {
+                const response = await fetch('api/raporlar.php?action=live_feed&last_id=' + lastFeedId);
+                const res = await response.json();
+
+                if (res.status && res.data && res.data.length > 0) {
+                    res.data.forEach(item => {
+                        if (item.id > lastFeedId) {
+                            lastFeedId = item.id;
+                        }
+
+                        const isGiris = (item.islem_turu === 'giris');
+                        const badgeHtml = isGiris 
+                            ? '<span class="badge-corporate-in"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i> GİRİŞ</span>'
+                            : '<span class="badge-corporate-out"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i> ÇIKIŞ</span>';
+
+                        const nameParts = (item.ad_soyad || 'Personel').trim().split(' ');
+                        const pInitials = (nameParts.length >= 2) 
+                            ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+                            : item.ad_soyad.substring(0, 2).toUpperCase();
+                        
+                        const avatarColor = isGiris ? '#1A365D' : '#0284C7';
+
+                        const rowNode = dataTableInstance.row.add([
+                            item.id,
+                            `<div class="d-flex align-items-center">
+                                <div class="avatar-initial-box me-2" style="background-color: ${avatarColor};">${pInitials}</div>
+                                <div>
+                                    <div class="fw-bold">${item.ad_soyad}</div>
+                                    <div class="text-muted font-monospace" style="font-size: 0.72rem;">Sicil: ${item.sicil_no}</div>
+                                </div>
+                            </div>`,
+                            item.departman,
+                            badgeHtml,
+                            item.islem_saati,
+                            item.terminal_id,
+                            '<span class="badge bg-light text-success border border-success border-opacity-50">HMAC Onaylı</span>'
+                        ]).draw(false).node();
+
+                        // Yeşil parıldama efekti ekle
+                        $(rowNode).addClass('row-highlight-new');
+                    });
+
+                    // KPI sayılarını da anında tazele
+                    updateKPI();
+                }
+            } catch (e) {
+                console.warn('Canlı akış hatası:', e);
+            }
+        }
+
         $(document).ready(function() {
-            $('#recent-passes-table').DataTable({
+            // DataTables İlklendirme
+            dataTableInstance = $('#recent-passes-table').DataTable({
                 language: {
                     search: "Filtrele:",
                     lengthMenu: "_MENU_ kayıt göster",
                     info: "_TOTAL_ kayıttan _START_ - _END_ arası listeleniyor",
                     infoEmpty: "Kayıt bulunamadı",
                     infoFiltered: "(_MAX_ kayıt içerisinden filtrelendi)",
-                    paginate: {
-                        first: "İlk",
-                        last: "Son",
-                        next: "Sonraki",
-                        previous: "Önceki"
-                    }
+                    paginate: { first: "İlk", last: "Son", next: "Sonraki", previous: "Önceki" }
                 },
-                order: [[4, 'desc']],
-                pageLength: 5,
+                order: [[0, 'desc']],
+                pageLength: 10,
                 lengthMenu: [5, 10, 25, 50],
                 responsive: true
             });
 
+            // Global Arama Inputu
+            $('#global-search-input').on('keyup', function() {
+                dataTableInstance.search(this.value).draw();
+            });
+
+            // Üst Canlı Saat
             function updateTopClock() {
                 const now = new Date();
                 const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -767,6 +777,13 @@ $initials = mb_strtoupper($initials, 'UTF-8');
             }
             setInterval(updateTopClock, 1000);
             updateTopClock();
+
+            // KPI İlk Yükleme ve 10sn Polling
+            updateKPI();
+            setInterval(updateKPI, 10000);
+
+            // Canlı Akış 3sn Polling
+            setInterval(pollLiveFeed, 3000);
         });
     </script>
 </body>
