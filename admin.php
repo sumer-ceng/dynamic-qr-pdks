@@ -46,8 +46,16 @@ try {
     if (!empty($initialPasses)) {
         $maxLastId = (int)max(array_column($initialPasses, 'id'));
     }
+    $stmtUsers = $db->query("
+        SELECT id, ad_soyad, departman, eposta, rol 
+        FROM kullanicilar 
+        WHERE durum = 1 
+        ORDER BY ad_soyad ASC
+    ");
+    $allPersonnel = $stmtUsers->fetchAll();
 } catch (Exception $e) {
     // Fallback
+    $allPersonnel = [];
 }
 ?>
 <!DOCTYPE html>
@@ -454,7 +462,7 @@ try {
                     </a>
                 </li>
                 <li class="nav-item-custom">
-                    <a href="#" class="nav-link-custom" onclick="exportToExcel(); return false;">
+                    <a href="#" class="nav-link-custom" onclick="openExcelReportModal(); return false;">
                         <i class="fa-solid fa-file-excel text-success"></i>
                         <span>Puantaj & Excel Raporları</span>
                     </a>
@@ -559,58 +567,81 @@ try {
                 </div>
 
                 <!-- Tablo Kartı & Filtreleme Toolbar -->
+                <!-- Tablo Kartı & Filtreleme Toolbar -->
                 <div class="table-card-corporate">
                     
-                    <div class="table-header-title">
-                        <div>
-                            <i class="fa-solid fa-file-lines me-1"></i> Canlı Turnike Geçiş Hareketleri
-                        </div>
-                        <div class="export-btn-group">
-                            <button type="button" class="btn btn-outline-success btn-sm fw-bold" onclick="exportToExcel()">
-                                <i class="fa-solid fa-file-excel me-1"></i> Excel Olarak İndir
+                    <div class="table-header-title flex-wrap gap-2">
+                        <!-- Sekme Butonları (Canlı Akış vs Günlük Puantaj) -->
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-primary btn-sm fw-bold" id="tab-btn-live" onclick="switchMainTab('live')">
+                                <i class="fa-solid fa-bolt me-1"></i> Canlı Turnike Akışı
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm ms-1" onclick="window.print();">
+                            <button type="button" class="btn btn-outline-primary btn-sm fw-bold" id="tab-btn-hours" onclick="switchMainTab('hours')">
+                                <i class="fa-solid fa-business-time me-1"></i> Günlük Çalışma Saati & Puantaj
+                            </button>
+                        </div>
+                        
+                        <!-- Rapor ve Yazdırma Araçları -->
+                        <div class="export-btn-group d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm" onclick="openExcelReportModal()">
+                                <i class="fa-solid fa-file-excel me-1"></i> Puantaj & Excel Rapor Sihirbazı
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print();" title="Yazdır">
                                 <i class="fa-solid fa-print me-1"></i> Yazdır
                             </button>
                         </div>
                     </div>
 
-                    <!-- Aşama 5: Tarih ve Departman Filtre Barı -->
+                    <!-- Filtreleme Araç Çubuğu (Tarih, Departman, Personel) -->
                     <div class="row g-2 mb-3 align-items-center bg-light p-2 rounded border border-slate-200">
-                        <div class="col-12 col-md-3">
+                        <div class="col-12 col-md-2">
                             <label class="form-label small fw-bold text-secondary mb-1">
                                 <i class="fa-regular fa-calendar me-1"></i> Başlangıç Tarihi
                             </label>
                             <input type="date" class="form-control form-control-sm" id="filter-start-date" value="<?= date('Y-m-01') ?>">
                         </div>
-                        <div class="col-12 col-md-3">
+                        <div class="col-12 col-md-2">
                             <label class="form-label small fw-bold text-secondary mb-1">
                                 <i class="fa-regular fa-calendar me-1"></i> Bitiş Tarihi
                             </label>
                             <input type="date" class="form-control form-control-sm" id="filter-end-date" value="<?= date('Y-m-d') ?>">
                         </div>
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <label class="form-label small fw-bold text-secondary mb-1">
                                 <i class="fa-solid fa-building me-1"></i> Departman Filtresi
                             </label>
-                            <select class="form-select form-select-sm" id="filter-dept">
+                            <select class="form-select form-select-sm" id="filter-dept" onchange="onFilterChange()">
                                 <option value="tum">Tüm Departmanlar</option>
-                                <option value="Yazılım & AR-GE">Yazılım & AR-GE</option>
-                                <option value="İnsan Kaynakları">İnsan Kaynakları</option>
-                                <option value="Bilgi İşlem & Güvenlik">Bilgi İşlem & Güvenlik</option>
+                                <option value="Yazılım & AR-GE Dairesi">Yazılım & AR-GE</option>
+                                <option value="İnsan Kaynakları Dairesi">İnsan Kaynakları</option>
+                                <option value="Bilgi İşlem Daire Başk.">Bilgi İşlem & Güvenlik</option>
                                 <option value="Finans & Muhasebe">Finans & Muhasebe</option>
                                 <option value="Saha Operasyonları">Saha Operasyonları</option>
                             </select>
                         </div>
-                        <div class="col-12 col-md-2 d-flex align-items-end pt-3">
-                            <button type="button" class="btn btn-success btn-sm w-100 fw-bold shadow-sm" onclick="exportToExcel()">
-                                <i class="fa-solid fa-file-excel me-1"></i> Excel Al
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">
+                                <i class="fa-solid fa-user me-1"></i> Personel Filtresi
+                            </label>
+                            <select class="form-select form-select-sm" id="filter-user-id" onchange="onFilterChange()">
+                                <option value="">Tüm Personeller (Toplu)</option>
+                                <?php foreach ($allPersonnel as $pers): ?>
+                                    <option value="<?= $pers['id'] ?>"><?= htmlspecialchars($pers['ad_soyad']) ?> (<?= htmlspecialchars($pers['departman']) ?>)</option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2 d-flex align-items-end pt-3 gap-1">
+                            <button type="button" class="btn btn-primary btn-sm flex-grow-1 fw-bold shadow-sm" onclick="applyFiltersAndPreview()" title="Seçilen filtrelere göre listele">
+                                <i class="fa-solid fa-filter me-1"></i> Filtrele
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm fw-bold" onclick="quickDownloadExcel()" title="Seçili filtrelerle hızlı Excel indir">
+                                <i class="fa-solid fa-download"></i>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Canlı DataTables Tablosu -->
-                    <div class="table-responsive">
+                    <!-- GÖRÜNÜM 1: Canlı Turnike Geçişleri Tablosu -->
+                    <div id="container-live-passes" class="table-responsive">
                         <table id="recent-passes-table" class="table table-bordered table-striped align-middle w-100">
                             <thead>
                                 <tr>
@@ -667,6 +698,48 @@ try {
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- GÖRÜNÜM 2: Günlük Çalışma Saati & Puantaj Tablosu (Önizleme) -->
+                    <div id="container-work-hours" class="table-responsive d-none">
+                        <!-- Puantaj Dönem Özeti Şeridi -->
+                        <div id="work-hours-summary-bar" class="p-2 mb-2 bg-light border rounded d-flex flex-wrap align-items-center justify-content-between gap-2 small">
+                            <div class="d-flex align-items-center gap-3">
+                                <span><i class="fa-solid fa-users text-primary me-1"></i> Personel: <strong id="wh-total-users">0</strong></span>
+                                <span><i class="fa-regular fa-calendar-check text-success me-1"></i> Toplam Gün: <strong id="wh-total-days">0</strong></span>
+                                <span><i class="fa-regular fa-clock text-warning-emphasis me-1"></i> Toplam Süre: <strong id="wh-total-hours">0 saat 00 dk</strong></span>
+                            </div>
+                            <div>
+                                <span class="badge bg-primary text-white"><i class="fa-solid fa-calculator me-1"></i> Günlük Ortalama: <span id="wh-avg-daily">0 saat 00 dk</span></span>
+                            </div>
+                        </div>
+
+                        <table id="work-hours-datatable" class="table table-bordered table-hover align-middle w-100">
+                            <thead class="table-dark" style="background-color: var(--primary-navy);">
+                                <tr>
+                                    <th style="width: 40px;">S.No</th>
+                                    <th>Tarih</th>
+                                    <th>Gün</th>
+                                    <th>Personel Bilgisi</th>
+                                    <th>Departman</th>
+                                    <th>İlk Giriş</th>
+                                    <th>Son Çıkış</th>
+                                    <th>Geçiş</th>
+                                    <th>Mola/Dışarıda</th>
+                                    <th>Net Çalışma</th>
+                                    <th>Ondalık Saat</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="work-hours-tbody">
+                                <tr>
+                                    <td colspan="12" class="text-center py-4 text-muted">
+                                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Çalışma saatleri ve puantaj hesaplanıyor...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
                 </div>
 
             </div>
@@ -769,18 +842,430 @@ try {
             });
         }
 
+    <!-- PUANTAJ & EXCEL RAPOR MOTORU SİHİRBAZI MODALI -->
+    <div class="modal fade" id="excelReportModal" tabindex="-1" aria-labelledby="excelReportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 650px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+                
+                <div class="modal-header text-white p-3" style="background-color: var(--primary-navy);">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-2 bg-success bg-opacity-25 rounded text-white fs-4">
+                            <i class="fa-solid fa-file-excel"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-white mb-0" id="excelReportModalLabel">Puantaj ve Excel Rapor Motoru</h5>
+                            <small class="text-white-50" style="font-size: 0.75rem;">Günlük Çalışma Saati Filtreleme & İndirme Masası</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4 bg-light">
+                    <!-- ADIM 1: RAPOR FORMATI / TÜRÜ SEÇİMİ -->
+                    <label class="form-label small fw-bold text-secondary mb-2 text-uppercase" style="letter-spacing: 0.5px;">
+                        1. Rapor Kapsamını Seçiniz:
+                    </label>
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 p-2 text-center report-type-card border-primary shadow-sm" id="card-type-toplu" onclick="selectReportType('toplu')" style="cursor: pointer; transition: all 0.2s; border-width: 2px;">
+                                <div class="fs-3 text-primary mb-1"><i class="fa-solid fa-users-rectangle"></i></div>
+                                <div class="fw-bold small text-dark">Toplu Puantaj</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Tüm personelin günlük çalışma süreleri ve icmali</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 p-2 text-center report-type-card border-slate-300" id="card-type-personel" onclick="selectReportType('personel')" style="cursor: pointer; transition: all 0.2s;">
+                                <div class="fs-3 text-success mb-1"><i class="fa-solid fa-id-card-clip"></i></div>
+                                <div class="fw-bold small text-dark">Kişi Bazlı Kart</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Seçilen personelin gün gün giriş-çıkış & saat dökümü</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 p-2 text-center report-type-card border-slate-300" id="card-type-ham_log" onclick="selectReportType('ham_log')" style="cursor: pointer; transition: all 0.2s;">
+                                <div class="fs-3 text-secondary mb-1"><i class="fa-solid fa-list-ol"></i></div>
+                                <div class="fw-bold small text-dark">Ham Geçiş Logu</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Turnikeden okutulan ham kayıtların dökümü</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="modal-report-type" value="toplu">
+
+                    <!-- ADIM 2: PERSONEL SEÇİMİ (Kişi bazlı seçildiğinde görünür) -->
+                    <div class="mb-3 d-none p-3 bg-white rounded border border-success" id="modal-personnel-wrapper">
+                        <label class="form-label small fw-bold text-dark mb-1">
+                            <i class="fa-solid fa-user-check text-success me-1"></i> Raporu Alınacak Personeli Seçiniz:
+                        </label>
+                        <select class="form-select" id="modal-user-id">
+                            <?php foreach ($allPersonnel as $pers): ?>
+                                <option value="<?= $pers['id'] ?>"><?= htmlspecialchars($pers['ad_soyad']) ?> (<?= htmlspecialchars($pers['departman']) ?> - Sicil: PER-<?= str_pad((string)$pers['id'], 4, '0', STR_PAD_LEFT) ?>)</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- ADIM 3: DEPARTMAN VE TARİH ARALIĞI -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-6" id="modal-dept-wrapper">
+                            <label class="form-label small fw-bold text-secondary mb-1">
+                                <i class="fa-solid fa-building me-1"></i> Departman Filtresi
+                            </label>
+                            <select class="form-select form-select-sm" id="modal-dept">
+                                <option value="tum">Tüm Departmanlar</option>
+                                <option value="Yazılım & AR-GE Dairesi">Yazılım & AR-GE</option>
+                                <option value="İnsan Kaynakları Dairesi">İnsan Kaynakları</option>
+                                <option value="Bilgi İşlem Daire Başk.">Bilgi İşlem & Güvenlik</option>
+                                <option value="Finans & Muhasebe">Finans & Muhasebe</option>
+                                <option value="Saha Operasyonları">Saha Operasyonları</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-bold text-secondary mb-1">
+                                <i class="fa-solid fa-bolt text-warning me-1"></i> Hızlı Tarih Seçimi
+                            </label>
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="setModalQuickDate('today')">Bugün</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setModalQuickDate('week')">Bu Hafta</button>
+                                <button type="button" class="btn btn-outline-secondary active" id="btn-quick-month" onclick="setModalQuickDate('month')">Bu Ay</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setModalQuickDate('all')">Tümü</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary mb-1">Başlangıç Tarihi</label>
+                            <input type="date" class="form-control form-control-sm" id="modal-start-date" value="<?= date('Y-m-01') ?>">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary mb-1">Bitiş Tarihi</label>
+                            <input type="date" class="form-control form-control-sm" id="modal-end-date" value="<?= date('Y-m-d') ?>">
+                        </div>
+                    </div>
+
+                    <div class="p-2 bg-white rounded border border-slate-200 mt-3 small text-secondary">
+                        <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                        Excel dosyası; net çalışma süresi, ondalık saat, mola aralıkları ve genel dönem icmali ile kurum standardında UTF-8 formatında oluşturulur.
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-white p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="previewFromModal()">
+                        <i class="fa-solid fa-eye me-1"></i> Tabloda Önizle
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>
+                        <button type="button" class="btn btn-success btn-sm fw-bold px-3 shadow-sm" onclick="downloadExcelFromModal()">
+                            <i class="fa-solid fa-file-excel me-1"></i> Excel Olarak İndir (.xls)
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery & Bootstrap 5.3 JS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- DataTables JS CDN -->
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        let lastFeedId = <?= (int)$maxLastId ?>;
+        let dataTableInstance = null;
+        let workHoursDataTableInstance = null;
+        let currentActiveTab = 'live'; // 'live' | 'hours'
+
         // ==============================================================================
-        // 1. EXCEL DÖKÜMÜ İNDİRME (action=export_excel)
+        // SABİT YÖNETİCİ MASTER QR KODU (10 Saniyede Bir Yenilenmeyen Kalıcı Kiosk Anahtarı)
         // ==============================================================================
-        function exportToExcel() {
+        const MASTER_QR_PAYLOAD = "ADMIN:MASTER:SIBERKON_PDKS_ROOT_KEY";
+        let adminQrModalInstance = null;
+        let qrGenerated = false;
+
+        function openAdminMasterQrModal() {
+            const modalEl = document.getElementById('adminMasterQrModal');
+            if (modalEl) {
+                if (!adminQrModalInstance) {
+                    adminQrModalInstance = new bootstrap.Modal(modalEl);
+                }
+                adminQrModalInstance.show();
+                
+                // Sabit Master QR Kodunu Çiz
+                const qrContainer = document.getElementById('admin-master-qrcode');
+                if (qrContainer && !qrContainer.hasChildNodes()) {
+                    new QRCode(qrContainer, {
+                        text: MASTER_QR_PAYLOAD,
+                        width: 216,
+                        height: 216,
+                        colorDark: "#0F2942",
+                        colorLight: "#FFFFFF",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
+            }
+        }
+
+        function copyMasterPayload() {
+            navigator.clipboard.writeText(MASTER_QR_PAYLOAD).then(() => {
+                alert("Master QR Kodu panoya kopyalandı:\n" + MASTER_QR_PAYLOAD);
+            }).catch(() => {
+                prompt("Master QR Kodu:", MASTER_QR_PAYLOAD);
+            });
+        }
+
+        // ==============================================================================
+        // ANA TAB DEĞİŞTİRME (Canlı Akış vs Günlük Çalışma Saati & Puantaj)
+        // ==============================================================================
+        function switchMainTab(tab) {
+            currentActiveTab = tab;
+            if (tab === 'live') {
+                $('#tab-btn-live').removeClass('btn-outline-primary').addClass('btn-primary');
+                $('#tab-btn-hours').removeClass('btn-primary').addClass('btn-outline-primary');
+                $('#container-work-hours').addClass('d-none');
+                $('#container-live-passes').removeClass('d-none');
+            } else {
+                $('#tab-btn-hours').removeClass('btn-outline-primary').addClass('btn-primary');
+                $('#tab-btn-live').removeClass('btn-primary').addClass('btn-outline-primary');
+                $('#container-live-passes').addClass('d-none');
+                $('#container-work-hours').removeClass('d-none');
+                loadWorkHoursTable();
+            }
+        }
+
+        function onFilterChange() {
+            if (currentActiveTab === 'hours') {
+                loadWorkHoursTable();
+            }
+        }
+
+        function applyFiltersAndPreview() {
+            switchMainTab('hours');
+        }
+
+        // ==============================================================================
+        // GÜNLÜK ÇALIŞMA SAATLERİ VE PUANTAJ VERİSİNİ YÜKLEME
+        // ==============================================================================
+        async function loadWorkHoursTable() {
             const startDate = $('#filter-start-date').val() || '';
             const endDate = $('#filter-end-date').val() || '';
             const dept = $('#filter-dept').val() || 'tum';
+            const userId = $('#filter-user-id').val() || '';
+
+            const url = `api/raporlar.php?action=work_hours_summary&baslangic_tarihi=${encodeURIComponent(startDate)}&bitis_tarihi=${encodeURIComponent(endDate)}&departman=${encodeURIComponent(dept)}&kullanici_id=${encodeURIComponent(userId)}`;
+
+            $('#work-hours-tbody').html(`
+                <tr>
+                    <td colspan="12" class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Çalışma saatleri ve puantaj verileri hesaplanıyor...
+                    </td>
+                </tr>
+            `);
+
+            try {
+                const response = await fetch(url);
+                const res = await response.json();
+
+                if (res.status && res.data) {
+                    const data = res.data;
+                    
+                    // Özet Şeridi Güncelle
+                    $('#wh-total-users').text(data.total_users_count || 0);
+                    $('#wh-total-days').text(data.total_days_count || 0);
+                    $('#wh-total-hours').text(data.total_hours_str || '0 saat 00 dk');
+                    $('#wh-avg-daily').text(data.avg_daily_str || '0 saat 00 dk');
+
+                    // DataTables Temizle ve Doldur
+                    if (workHoursDataTableInstance) {
+                        workHoursDataTableInstance.destroy();
+                    }
+
+                    const rows = data.daily_report || [];
+                    let html = '';
+
+                    if (rows.length === 0) {
+                        html = `<tr><td colspan="12" class="text-center py-4 text-muted">Seçilen filtrelere uygun çalışma saati kaydı bulunamadı.</td></tr>`;
+                    } else {
+                        rows.forEach((r, idx) => {
+                            let statusBadge = '<span class="badge bg-success">Tamamlandı</span>';
+                            if (r.durum_kodu === 'active') {
+                                statusBadge = '<span class="badge bg-info text-dark"><i class="fa-solid fa-person-walking-arrow-right me-1"></i> İçeride</span>';
+                            } else if (r.durum_kodu === 'missing_exit') {
+                                statusBadge = '<span class="badge bg-warning text-dark"><i class="fa-solid fa-triangle-exclamation me-1"></i> Eksik Çıkış</span>';
+                            }
+
+                            html += `
+                                <tr>
+                                    <td class="text-center font-monospace">${idx + 1}</td>
+                                    <td class="text-center fw-bold">${r.tarih_formatli}</td>
+                                    <td class="text-center text-muted">${r.gun}</td>
+                                    <td>
+                                        <div class="fw-bold">${r.ad_soyad}</div>
+                                        <div class="text-muted font-monospace" style="font-size: 0.72rem;">${r.sicil_no}</div>
+                                    </td>
+                                    <td>${r.departman}</td>
+                                    <td class="text-center font-monospace text-success fw-bold">${r.ilk_giris}</td>
+                                    <td class="text-center font-monospace text-danger fw-bold">${r.son_cikis}</td>
+                                    <td class="text-center">${r.gecis_sayisi}</td>
+                                    <td class="text-center text-muted small">${r.mola_str}</td>
+                                    <td class="text-center fw-bold text-primary" style="background-color: #F8FAFC;">${r.calisma_saati_str}</td>
+                                    <td class="text-end font-monospace fw-bold text-dark">${parseFloat(r.ondalik_saat).toFixed(2)}</td>
+                                    <td class="text-center">${statusBadge}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    $('#work-hours-tbody').html(html);
+
+                    if (rows.length > 0) {
+                        workHoursDataTableInstance = $('#work-hours-datatable').DataTable({
+                            language: {
+                                search: "Tabloda Ara:",
+                                lengthMenu: "_MENU_ kayıt",
+                                info: "_TOTAL_ günden _START_ - _END_ arası gösteriliyor",
+                                infoEmpty: "Kayıt yok",
+                                paginate: { first: "İlk", last: "Son", next: "Sonraki", previous: "Önceki" }
+                            },
+                            order: [[1, 'desc']],
+                            pageLength: 10,
+                            lengthMenu: [5, 10, 25, 50, 100],
+                            responsive: true
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Puantaj yükleme hatası:", e);
+                $('#work-hours-tbody').html(`<tr><td colspan="12" class="text-center text-danger py-3">Veri yüklenirken hata oluştu: ${e.message}</td></tr>`);
+            }
+        }
+
+        // ==============================================================================
+        // PUANTAJ & EXCEL RAPOR MOTORU SİHİRBAZI FONKSİYONLARI
+        // ==============================================================================
+        let excelReportModalInstance = null;
+
+        function openExcelReportModal() {
+            // Ana filtre çubuğundaki değerleri modala senkronize et
+            $('#modal-start-date').val($('#filter-start-date').val());
+            $('#modal-end-date').val($('#filter-end-date').val());
+            $('#modal-dept').val($('#filter-dept').val());
+            const currentUserId = $('#filter-user-id').val();
+            if (currentUserId) {
+                $('#modal-user-id').val(currentUserId);
+                selectReportType('personel');
+            } else {
+                selectReportType('toplu');
+            }
+
+            const modalEl = document.getElementById('excelReportModal');
+            if (modalEl) {
+                if (!excelReportModalInstance) {
+                    excelReportModalInstance = new bootstrap.Modal(modalEl);
+                }
+                excelReportModalInstance.show();
+            }
+        }
+
+        function selectReportType(type) {
+            $('#modal-report-type').val(type);
+            $('.report-type-card').removeClass('border-primary border-success active-card shadow-sm').addClass('border-slate-300').css('border-width', '1px');
+            
+            if (type === 'toplu') {
+                $('#card-type-toplu').removeClass('border-slate-300').addClass('border-primary shadow-sm').css('border-width', '2px');
+                $('#modal-personnel-wrapper').addClass('d-none');
+                $('#modal-dept-wrapper').removeClass('d-none');
+            } else if (type === 'personel') {
+                $('#card-type-personel').removeClass('border-slate-300').addClass('border-success shadow-sm').css('border-width', '2px');
+                $('#modal-personnel-wrapper').removeClass('d-none');
+                $('#modal-dept-wrapper').addClass('d-none');
+            } else if (type === 'ham_log') {
+                $('#card-type-ham_log').removeClass('border-slate-300').addClass('border-primary shadow-sm').css('border-width', '2px');
+                $('#modal-personnel-wrapper').addClass('d-none');
+                $('#modal-dept-wrapper').removeClass('d-none');
+            }
+        }
+
+        function setModalQuickDate(range) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+
+            if (range === 'today') {
+                $('#modal-start-date').val(todayStr);
+                $('#modal-end-date').val(todayStr);
+            } else if (range === 'week') {
+                const dayOfWeek = today.getDay() || 7; // 1: Pazartesi, 7: Pazar
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - dayOfWeek + 1);
+                const mmm = String(monday.getMonth() + 1).padStart(2, '0');
+                const mdd = String(monday.getDate()).padStart(2, '0');
+                $('#modal-start-date').val(`${monday.getFullYear()}-${mmm}-${mdd}`);
+                $('#modal-end-date').val(todayStr);
+            } else if (range === 'month') {
+                $('#modal-start-date').val(`${yyyy}-${mm}-01`);
+                $('#modal-end-date').val(todayStr);
+            } else if (range === 'all') {
+                $('#modal-start-date').val('');
+                $('#modal-end-date').val('');
+            }
+        }
+
+        function downloadExcelFromModal() {
+            const reportType = $('#modal-report-type').val() || 'toplu';
+            const startDate = $('#modal-start-date').val() || '';
+            const endDate = $('#modal-end-date').val() || '';
+            const dept = $('#modal-dept').val() || 'tum';
+            const userId = (reportType === 'personel') ? ($('#modal-user-id').val() || '') : '';
 
             const exportUrl = 'api/raporlar.php?action=export_excel' +
+                '&rapor_turu=' + encodeURIComponent(reportType) +
                 '&baslangic_tarihi=' + encodeURIComponent(startDate) +
                 '&bitis_tarihi=' + encodeURIComponent(endDate) +
-                '&departman=' + encodeURIComponent(dept);
+                '&departman=' + encodeURIComponent(dept) +
+                '&kullanici_id=' + encodeURIComponent(userId);
+
+            window.location.href = exportUrl;
+        }
+
+        function previewFromModal() {
+            const reportType = $('#modal-report-type').val() || 'toplu';
+            $('#filter-start-date').val($('#modal-start-date').val());
+            $('#filter-end-date').val($('#modal-end-date').val());
+            $('#filter-dept').val($('#modal-dept').val());
+            if (reportType === 'personel') {
+                $('#filter-user-id').val($('#modal-user-id').val());
+            } else {
+                $('#filter-user-id').val('');
+            }
+
+            if (excelReportModalInstance) {
+                excelReportModalInstance.hide();
+            }
+
+            if (reportType === 'ham_log') {
+                switchMainTab('live');
+            } else {
+                switchMainTab('hours');
+            }
+        }
+
+        function quickDownloadExcel() {
+            const startDate = $('#filter-start-date').val() || '';
+            const endDate = $('#filter-end-date').val() || '';
+            const dept = $('#filter-dept').val() || 'tum';
+            const userId = $('#filter-user-id').val() || '';
+            const reportType = userId ? 'personel' : 'toplu';
+
+            const exportUrl = 'api/raporlar.php?action=export_excel' +
+                '&rapor_turu=' + encodeURIComponent(reportType) +
+                '&baslangic_tarihi=' + encodeURIComponent(startDate) +
+                '&bitis_tarihi=' + encodeURIComponent(endDate) +
+                '&departman=' + encodeURIComponent(dept) +
+                '&kullanici_id=' + encodeURIComponent(userId);
 
             window.location.href = exportUrl;
         }
@@ -859,11 +1344,11 @@ try {
         }
 
         $(document).ready(function() {
-            // DataTables İlklendirme
+            // DataTables İlklendirme (Canlı Akış)
             dataTableInstance = $('#recent-passes-table').DataTable({
                 language: {
                     search: "Filtrele:",
-                    lengthMenu: "_MENU_ kayıt göster",
+                    lengthMenu: "_MENU_ kayıt",
                     info: "_TOTAL_ kayıttan _START_ - _END_ arası listeleniyor",
                     infoEmpty: "Kayıt bulunamadı",
                     infoFiltered: "(_MAX_ kayıt içerisinden filtrelendi)",
@@ -877,7 +1362,11 @@ try {
 
             // Global Arama Inputu
             $('#global-search-input').on('keyup', function() {
-                dataTableInstance.search(this.value).draw();
+                if (currentActiveTab === 'live' && dataTableInstance) {
+                    dataTableInstance.search(this.value).draw();
+                } else if (currentActiveTab === 'hours' && workHoursDataTableInstance) {
+                    workHoursDataTableInstance.search(this.value).draw();
+                }
             });
 
             // Üst Canlı Saat
