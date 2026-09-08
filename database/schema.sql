@@ -45,6 +45,7 @@ CREATE TABLE `hareketler` (
     `islem_turu` ENUM('giris', 'cikis') NOT NULL COMMENT 'Geçiş Yönü (Giriş / Çıkış)',
     `islem_zamani` DATETIME NOT NULL COMMENT 'Turnikeden geçiş yapılan zaman',
     `terminal_id` VARCHAR(50) NOT NULL DEFAULT 'Turnike #01' COMMENT 'Geçişin yapıldığı kapı / kiosk terminali',
+    `ip_adresi` VARCHAR(45) NULL COMMENT 'Kiosk veya istemci IP adresi',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Log Kayıt Zamanı',
     
     -- Dış Anahtar Kısıtlaması (Foreign Key)
