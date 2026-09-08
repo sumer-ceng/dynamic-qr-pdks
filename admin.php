@@ -851,56 +851,6 @@ try {
         </div>
     </div>
 
-    <!-- jQuery & Bootstrap 5.3 JS -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- DataTables JS CDN -->
-    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-
-    <script>
-        let lastFeedId = <?= (int)$maxLastId ?>;
-        let dataTableInstance = null;
-
-        // ==============================================================================
-        // SABİT YÖNETİCİ MASTER QR KODU (10 Saniyede Bir Yenilenmeyen Kalıcı Kiosk Anahtarı)
-        // ==============================================================================
-        const MASTER_QR_PAYLOAD = "ADMIN:MASTER:SIBERKON_PDKS_ROOT_KEY";
-        let adminQrModalInstance = null;
-        let qrGenerated = false;
-
-        function openAdminMasterQrModal() {
-            const modalEl = document.getElementById('adminMasterQrModal');
-            if (modalEl) {
-                if (!adminQrModalInstance) {
-                    adminQrModalInstance = new bootstrap.Modal(modalEl);
-                }
-                adminQrModalInstance.show();
-                
-                // Sabit Master QR Kodunu Çiz
-                const qrContainer = document.getElementById('admin-master-qrcode');
-                if (qrContainer && !qrContainer.hasChildNodes()) {
-                    new QRCode(qrContainer, {
-                        text: MASTER_QR_PAYLOAD,
-                        width: 216,
-                        height: 216,
-                        colorDark: "#0F2942",
-                        colorLight: "#FFFFFF",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
-                }
-            }
-        }
-
-        function copyMasterPayload() {
-            navigator.clipboard.writeText(MASTER_QR_PAYLOAD).then(() => {
-                alert("Master QR Kodu panoya kopyalandı:\n" + MASTER_QR_PAYLOAD);
-            }).catch(() => {
-                prompt("Master QR Kodu:", MASTER_QR_PAYLOAD);
-            });
-        }
-
     <!-- PUANTAJ & EXCEL RAPOR MOTORU SİHİRBAZI MODALI -->
     <div class="modal fade" id="excelReportModal" tabindex="-1" aria-labelledby="excelReportModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 650px;">
