@@ -456,7 +456,7 @@ try {
 
                 <li class="menu-category mt-2">Resmi Kayıt & Rapor</li>
                 <li class="nav-item-custom">
-                    <a href="#" class="nav-link-custom" onclick="alert('Personel sicil kütüğü modülü aktiftir.'); return false;">
+                    <a href="#" class="nav-link-custom" id="sidebar-link-personel" onclick="switchMainTab('personel'); return false;">
                         <i class="fa-solid fa-users"></i>
                         <span>Personel Kütüğü</span>
                     </a>
@@ -571,19 +571,25 @@ try {
                 <div class="table-card-corporate">
                     
                     <div class="table-header-title flex-wrap gap-2">
-                        <!-- Sekme Butonları (Canlı Akış vs Günlük Puantaj) -->
-                        <div class="d-flex align-items-center gap-2">
+                        <!-- Sekme Butonları (Canlı Akış vs Günlük Puantaj vs Personel Yönetimi) -->
+                        <div class="d-flex align-items-center flex-wrap gap-2">
                             <button type="button" class="btn btn-primary btn-sm fw-bold" id="tab-btn-live" onclick="switchMainTab('live')">
                                 <i class="fa-solid fa-bolt me-1"></i> Canlı Turnike Akışı
                             </button>
                             <button type="button" class="btn btn-outline-primary btn-sm fw-bold" id="tab-btn-hours" onclick="switchMainTab('hours')">
                                 <i class="fa-solid fa-business-time me-1"></i> Günlük Çalışma Saati & Puantaj
                             </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm fw-bold" id="tab-btn-personel" onclick="switchMainTab('personel')">
+                                <i class="fa-solid fa-users-gear me-1"></i> Personel Yönetimi
+                            </button>
                         </div>
                         
                         <!-- Rapor ve Yazdırma Araçları -->
                         <div class="export-btn-group d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm" onclick="openExcelReportModal()">
+                            <button type="button" class="btn btn-primary btn-sm fw-bold shadow-sm d-none" id="btn-top-add-personel" onclick="openPersonelModal(null)">
+                                <i class="fa-solid fa-user-plus me-1"></i> Yeni Personel Ekle
+                            </button>
+                            <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm" id="btn-top-excel-wizard" onclick="openExcelReportModal()">
                                 <i class="fa-solid fa-file-excel me-1"></i> Puantaj & Excel Rapor Sihirbazı
                             </button>
                             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print();" title="Yazdır">
@@ -593,7 +599,7 @@ try {
                     </div>
 
                     <!-- Filtreleme Araç Çubuğu (Tarih, Departman, Personel) -->
-                    <div class="row g-2 mb-3 align-items-center bg-light p-2 rounded border border-slate-200">
+                    <div id="filter-toolbar-container" class="row g-2 mb-3 align-items-center bg-light p-2 rounded border border-slate-200">
                         <div class="col-12 col-md-2">
                             <label class="form-label small fw-bold text-secondary mb-1">
                                 <i class="fa-regular fa-calendar me-1"></i> Başlangıç Tarihi
@@ -734,6 +740,59 @@ try {
                                 <tr>
                                     <td colspan="12" class="text-center py-4 text-muted">
                                         <i class="fa-solid fa-spinner fa-spin me-1"></i> Çalışma saatleri ve puantaj hesaplanıyor...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- GÖRÜNÜM 3: Personel Yönetimi & Sicil Kütüğü Tablosu -->
+                    <div id="container-personnel-mgmt" class="table-responsive d-none">
+                        <!-- Üst Bilgi ve Aksiyon Çubuğu -->
+                        <div class="p-3 mb-3 bg-white border rounded d-flex flex-wrap align-items-center justify-content-between gap-3 shadow-sm">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded p-2 bg-primary bg-opacity-10 text-primary fs-4">
+                                    <i class="fa-solid fa-users-gear"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">Personel Sicil Kütüğü & Kullanıcı Yetkileri</h6>
+                                    <small class="text-secondary">Sistemde toplam <strong id="mgmt-total-staff-count" class="text-primary font-monospace">0</strong> kayıtlı personel bulunmaktadır.</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadPersonnelManagementTable()">
+                                    <i class="fa-solid fa-rotate me-1"></i> Listeyi Yenile
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm fw-bold shadow-sm" onclick="openPersonelModal(null)">
+                                    <i class="fa-solid fa-user-plus me-1"></i> Yeni Personel Ekle
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Canlı İşlem Bildirim Alanı -->
+                        <div id="personel-table-alert" class="alert alert-dismissible fade show d-none mb-3" role="alert">
+                            <span id="personel-table-alert-text"></span>
+                            <button type="button" class="btn-close" onclick="$('#personel-table-alert').addClass('d-none')"></button>
+                        </div>
+
+                        <table id="personnel-mgmt-datatable" class="table table-bordered table-hover align-middle w-100">
+                            <thead class="table-dark" style="background-color: var(--primary-navy);">
+                                <tr>
+                                    <th style="width: 85px;">Sicil No</th>
+                                    <th>Personel Adı Soyadı</th>
+                                    <th>E-posta</th>
+                                    <th>Departman / Birim</th>
+                                    <th>Yetki Rolü</th>
+                                    <th>Hesap Durumu</th>
+                                    <th>Toplam Geçiş</th>
+                                    <th>Kayıt Tarihi</th>
+                                    <th style="width: 145px;" class="text-center">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="personnel-mgmt-tbody">
+                                <tr>
+                                    <td colspan="9" class="text-center py-4 text-muted">
+                                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Personel sicil kütüğü yükleniyor...
                                     </td>
                                 </tr>
                             </tbody>
@@ -963,6 +1022,98 @@ try {
         </div>
     </div>
 
+    <!-- PERSONEL EKLEME / DÜZENLEME MODALI -->
+    <div class="modal fade" id="personelFormModal" tabindex="-1" aria-labelledby="personelFormModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+                <div class="modal-header text-white p-3" style="background-color: var(--primary-navy); border-bottom: 3px solid #C5A880;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-1 bg-white rounded d-flex align-items-center justify-content-center">
+                            <i class="fa-solid fa-user-gear text-primary fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="modal-title fw-bold text-white mb-0" id="personelFormModalLabel">Yeni Personel Kaydı</h6>
+                            <small class="text-white-50" style="font-size: 0.72rem;">Siberkon PDKS Sicil Kütüğü</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <form id="personelRecordForm" onsubmit="handlePersonelFormSubmit(event)">
+                    <input type="hidden" id="p-form-id" name="id" value="">
+                    <div class="modal-body p-4 bg-light">
+                        <div id="p-form-alert" class="alert d-none mb-3 py-2 small" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label for="p-form-name" class="form-label fw-bold small text-secondary">Personel Adı Soyadı <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-user text-muted"></i></span>
+                                <input type="text" class="form-control" id="p-form-name" name="ad_soyad" placeholder="Örn: Ahmet Yılmaz" required autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="p-form-email" class="form-label fw-bold small text-secondary">Kurumsal E-posta Adresi <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-envelope text-muted"></i></span>
+                                <input type="email" class="form-control" id="p-form-email" name="eposta" placeholder="Örn: ahmet@siberkon.gov.tr" required autocomplete="off">
+                            </div>
+                            <div class="form-text small">Personelin mobil QR girişinde kullanacağı e-posta adresi.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="p-form-password" class="form-label fw-bold small text-secondary">
+                                Giriş Parolası <span id="p-form-pass-required" class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-lock text-muted"></i></span>
+                                <input type="password" class="form-control" id="p-form-password" name="sifre" placeholder="En az 6 karakter" autocomplete="new-password">
+                            </div>
+                            <div class="form-text small" id="p-form-pass-hint">Yeni personel için en az 6 karakter şifre giriniz.</div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label for="p-form-dept" class="form-label fw-bold small text-secondary">Departman / Birim</label>
+                                <input type="text" class="form-control" id="p-form-dept" name="departman" placeholder="Örn: Yazılım & AR-GE" list="dept-suggestions" autocomplete="off">
+                                <datalist id="dept-suggestions">
+                                    <option value="Yazılım & AR-GE Dairesi">
+                                    <option value="Bilgi İşlem Daire Başk.">
+                                    <option value="İnsan Kaynakları">
+                                    <option value="Muhasebe & Finans">
+                                    <option value="İdari İşler & Güvenlik">
+                                    <option value="Ana Giriş Kapısı #01">
+                                </datalist>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label for="p-form-role" class="form-label fw-bold small text-secondary">Yetki Rolü <span class="text-danger">*</span></label>
+                                <select class="form-select" id="p-form-role" name="rol" required>
+                                    <option value="personel" selected>Personel (Standart)</option>
+                                    <option value="admin">Yönetici (Admin)</option>
+                                    <option value="terminal">Turnike Terminali</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label for="p-form-status" class="form-label fw-bold small text-secondary">Hesap Durumu</label>
+                            <select class="form-select" id="p-form-status" name="durum">
+                                <option value="1" selected>✅ Aktif (Turnikeden Geçebilir)</option>
+                                <option value="0">⛔ Pasif (Geçiş Engellendi / İzinli)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-white p-3 d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">İptal</button>
+                        <button type="submit" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" id="p-form-submit-btn">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> <span id="p-form-btn-text">Kaydet</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- jQuery & Bootstrap 5.3 JS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -975,7 +1126,9 @@ try {
         let lastFeedId = <?= (int)$maxLastId ?>;
         let dataTableInstance = null;
         let workHoursDataTableInstance = null;
-        let currentActiveTab = 'live'; // 'live' | 'hours'
+        let personnelDataTableInstance = null;
+        let currentActiveTab = 'live'; // 'live' | 'hours' | 'personel'
+        let personelFormModalInstance = null;
 
         // ==============================================================================
         // SABİT YÖNETİCİ MASTER QR KODU (10 Saniyede Bir Yenilenmeyen Kalıcı Kiosk Anahtarı)
@@ -1016,21 +1169,42 @@ try {
         }
 
         // ==============================================================================
-        // ANA TAB DEĞİŞTİRME (Canlı Akış vs Günlük Çalışma Saati & Puantaj)
+        // ANA TAB DEĞİŞTİRME (Canlı Akış vs Günlük Çalışma Saati vs Personel Yönetimi)
         // ==============================================================================
         function switchMainTab(tab) {
             currentActiveTab = tab;
+
+            // Buton durumlarını sıfırla
+            $('#tab-btn-live, #tab-btn-hours, #tab-btn-personel').removeClass('btn-primary').addClass('btn-outline-primary');
+            $('#sidebar-link-personel').removeClass('active');
+
             if (tab === 'live') {
                 $('#tab-btn-live').removeClass('btn-outline-primary').addClass('btn-primary');
-                $('#tab-btn-hours').removeClass('btn-primary').addClass('btn-outline-primary');
-                $('#container-work-hours').addClass('d-none');
+                $('#filter-toolbar-container').removeClass('d-none');
+                $('#btn-top-excel-wizard').removeClass('d-none');
+                $('#btn-top-add-personel').addClass('d-none');
+                
+                $('#container-work-hours, #container-personnel-mgmt').addClass('d-none');
                 $('#container-live-passes').removeClass('d-none');
-            } else {
+            } else if (tab === 'hours') {
                 $('#tab-btn-hours').removeClass('btn-outline-primary').addClass('btn-primary');
-                $('#tab-btn-live').removeClass('btn-primary').addClass('btn-outline-primary');
-                $('#container-live-passes').addClass('d-none');
+                $('#filter-toolbar-container').removeClass('d-none');
+                $('#btn-top-excel-wizard').removeClass('d-none');
+                $('#btn-top-add-personel').addClass('d-none');
+                
+                $('#container-live-passes, #container-personnel-mgmt').addClass('d-none');
                 $('#container-work-hours').removeClass('d-none');
                 loadWorkHoursTable();
+            } else if (tab === 'personel') {
+                $('#tab-btn-personel').removeClass('btn-outline-primary').addClass('btn-primary');
+                $('#sidebar-link-personel').addClass('active');
+                $('#filter-toolbar-container').addClass('d-none');
+                $('#btn-top-excel-wizard').addClass('d-none');
+                $('#btn-top-add-personel').removeClass('d-none');
+
+                $('#container-live-passes, #container-work-hours').addClass('d-none');
+                $('#container-personnel-mgmt').removeClass('d-none');
+                loadPersonnelManagementTable();
             }
         }
 
@@ -1343,6 +1517,297 @@ try {
             }
         }
 
+        // ==============================================================================
+        // PERSONEL YÖNETİMİ & SİCİL KÜTÜĞÜ (CRUD & Durum Yönetimi)
+        // ==============================================================================
+        async function loadPersonnelManagementTable() {
+            $('#personnel-mgmt-tbody').html(`
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Personel sicil listesi yükleniyor...
+                    </td>
+                </tr>
+            `);
+
+            try {
+                const response = await fetch('api/personel.php?action=list');
+                const res = await response.json();
+
+                if (!res.status) {
+                    showPersonelTableAlert('Hata: ' + (res.message || 'Veriler alınamadı.'), 'danger');
+                    return;
+                }
+
+                const list = res.data || [];
+                $('#mgmt-total-staff-count').text(list.length);
+                $('#kpi-total-staff').text(list.length);
+
+                if (personnelDataTableInstance) {
+                    personnelDataTableInstance.destroy();
+                }
+
+                if (list.length === 0) {
+                    $('#personnel-mgmt-tbody').html(`
+                        <tr><td colspan="9" class="text-center py-4 text-muted">Kayıtlı personel bulunamadı.</td></tr>
+                    `);
+                    return;
+                }
+
+                let html = '';
+                list.forEach(p => {
+                    const nameParts = (p.ad_soyad || 'Personel').trim().split(' ');
+                    const pInitials = (nameParts.length >= 2) 
+                        ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+                        : p.ad_soyad.substring(0, 2).toUpperCase();
+
+                    let roleBadge = '<span class="badge bg-secondary"><i class="fa-solid fa-user me-1"></i> Personel</span>';
+                    if (p.rol === 'admin') {
+                        roleBadge = '<span class="badge bg-danger"><i class="fa-solid fa-shield-halved me-1"></i> Yönetici</span>';
+                    } else if (p.rol === 'terminal') {
+                        roleBadge = '<span class="badge bg-warning text-dark"><i class="fa-solid fa-desktop me-1"></i> Terminal</span>';
+                    }
+
+                    const isAktif = (p.durum === 1);
+                    const statusBadge = isAktif 
+                        ? '<span class="badge bg-success-subtle text-success border border-success border-opacity-50" style="cursor: pointer;"><i class="fa-solid fa-circle-check me-1"></i> Aktif</span>'
+                        : '<span class="badge bg-danger-subtle text-danger border border-danger border-opacity-50" style="cursor: pointer;"><i class="fa-solid fa-circle-xmark me-1"></i> Pasif</span>';
+
+                    const safeName = $('<div>').text(p.ad_soyad).html();
+                    const safeDept = $('<div>').text(p.departman || 'Genel Kadro').html();
+                    const safeMail = $('<div>').text(p.eposta).html();
+
+                    html += `
+                        <tr data-personel-id="${p.id}">
+                            <td class="text-center font-monospace fw-bold text-secondary">${p.sicil_no}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-initial-box me-2" style="background-color: ${p.rol === 'admin' ? '#8B0000' : (p.rol === 'terminal' ? '#D97706' : '#1A365D')};">${pInitials}</div>
+                                    <div>
+                                        <div class="fw-bold text-dark">${safeName}</div>
+                                        <div class="text-muted small" style="font-size: 0.72rem;">Son Hareket: ${p.son_hareket_zamani}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="font-monospace small text-secondary">${safeMail}</td>
+                            <td><span class="badge bg-light text-dark border">${safeDept}</span></td>
+                            <td>${roleBadge}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm p-0 border-0 bg-transparent" onclick="togglePersonelStatus(${p.id}, '${escapeJsString(p.ad_soyad)}')" title="Durumu Değiştirmek İçin Tıklayın">
+                                    ${statusBadge}
+                                </button>
+                            </td>
+                            <td class="text-center font-monospace"><span class="badge bg-light text-dark border">${p.toplam_gecis} Geçiş</span></td>
+                            <td class="small text-secondary">${p.kayit_tarihi}</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="openPersonelModal(${p.id})" title="Bilgileri Düzenle">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deletePersonel(${p.id}, '${escapeJsString(p.ad_soyad)}')" title="Personeli Sil">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                $('#personnel-mgmt-tbody').html(html);
+
+                personnelDataTableInstance = $('#personnel-mgmt-datatable').DataTable({
+                    language: {
+                        search: "Personel Filtrele:",
+                        lengthMenu: "_MENU_ personel",
+                        info: "_TOTAL_ personelden _START_ - _END_ arası listeleniyor",
+                        infoEmpty: "Kayıt bulunamadı",
+                        infoFiltered: "(_MAX_ personel içerisinden filtrelendi)",
+                        paginate: { first: "İlk", last: "Son", next: "Sonraki", previous: "Önceki" }
+                    },
+                    order: [[0, 'desc']],
+                    pageLength: 10,
+                    lengthMenu: [5, 10, 25, 50],
+                    responsive: true
+                });
+
+                // Dropdown menüleri de güncel personellerle besle
+                updatePersonnelDropdowns(list);
+
+            } catch (e) {
+                console.error('Personel tablosu yükleme hatası:', e);
+                showPersonelTableAlert('Personel listesi yüklenirken bağlantı hatası oluştu.', 'danger');
+            }
+        }
+
+        function updatePersonnelDropdowns(list) {
+            const currentSelected = $('#filter-user-id').val();
+            let opts = '<option value="">Tüm Personeller (Toplu)</option>';
+            list.forEach(p => {
+                if (p.durum === 1) {
+                    opts += `<option value="${p.id}">${p.ad_soyad} (${p.departman || 'Genel Kadro'})</option>`;
+                }
+            });
+            $('#filter-user-id').html(opts);
+            $('#modal-user-id').html(opts);
+            if (currentSelected) {
+                $('#filter-user-id').val(currentSelected);
+                $('#modal-user-id').val(currentSelected);
+            }
+        }
+
+        function escapeJsString(str) {
+            return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        function showPersonelTableAlert(msg, type = 'success') {
+            const alertBox = $('#personel-table-alert');
+            alertBox.removeClass('alert-success alert-danger alert-info d-none').addClass('alert-' + type);
+            $('#personel-table-alert-text').html(msg);
+            setTimeout(() => {
+                alertBox.addClass('d-none');
+            }, 6000);
+        }
+
+        // Personel Ekleme / Düzenleme Modalı Açılışı
+        async function openPersonelModal(id = null) {
+            const modalEl = document.getElementById('personelFormModal');
+            if (!personelFormModalInstance) {
+                personelFormModalInstance = new bootstrap.Modal(modalEl);
+            }
+
+            const alertEl = $('#p-form-alert');
+            alertEl.addClass('d-none').text('');
+            $('#personelRecordForm')[0].reset();
+
+            if (id === null) {
+                // YENİ KAYIT
+                $('#p-form-id').val('');
+                $('#personelFormModalLabel').html('<i class="fa-solid fa-user-plus me-2 text-warning"></i> Yeni Personel Kaydı');
+                $('#p-form-btn-text').text('Personeli Kaydet');
+                $('#p-form-pass-required').removeClass('d-none');
+                $('#p-form-password').attr('required', true);
+                $('#p-form-pass-hint').text('Yeni personel için en az 6 karakter şifre giriniz.');
+                $('#p-form-role').val('personel');
+                $('#p-form-status').val('1');
+                personelFormModalInstance.show();
+            } else {
+                // DÜZENLEME
+                $('#p-form-id').val(id);
+                $('#personelFormModalLabel').html('<i class="fa-solid fa-user-pen me-2 text-warning"></i> Personel Bilgilerini Düzenle');
+                $('#p-form-btn-text').text('Güncellemeleri Kaydet');
+                $('#p-form-pass-required').addClass('d-none');
+                $('#p-form-password').removeAttr('required');
+                $('#p-form-pass-hint').text('Boş bırakırsanız personelin mevcut parolası korunur.');
+
+                try {
+                    const response = await fetch('api/personel.php?action=get&id=' + id);
+                    const res = await response.json();
+                    if (res.status && res.data) {
+                        const u = res.data;
+                        $('#p-form-name').val(u.ad_soyad);
+                        $('#p-form-email').val(u.eposta);
+                        $('#p-form-dept').val(u.departman || '');
+                        $('#p-form-role').val(u.rol || 'personel');
+                        $('#p-form-status').val(u.durum !== undefined ? u.durum : 1);
+                        personelFormModalInstance.show();
+                    } else {
+                        alert('Personel bilgileri yüklenemedi: ' + (res.message || 'Kayıt bulunamadı.'));
+                    }
+                } catch (e) {
+                    alert('Sunucuya bağlanılamadı: ' + e.message);
+                }
+            }
+        }
+
+        // Personel Form Gönderimi (Ekle / Güncelle)
+        async function handlePersonelFormSubmit(event) {
+            event.preventDefault();
+            const submitBtn = $('#p-form-submit-btn');
+            const alertEl = $('#p-form-alert');
+            alertEl.addClass('d-none').text('');
+
+            const payload = {
+                id: $('#p-form-id').val() || null,
+                ad_soyad: $('#p-form-name').val().trim(),
+                eposta: $('#p-form-email').val().trim(),
+                sifre: $('#p-form-password').val(),
+                departman: $('#p-form-dept').val().trim(),
+                rol: $('#p-form-role').val(),
+                durum: parseInt($('#p-form-status').val(), 10)
+            };
+
+            submitBtn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Kaydediliyor...');
+
+            try {
+                const response = await fetch('api/personel.php?action=save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const res = await response.json();
+
+                if (res.status) {
+                    if (personelFormModalInstance) {
+                        personelFormModalInstance.hide();
+                    }
+                    showPersonelTableAlert('<i class="fa-solid fa-circle-check me-1"></i> ' + res.message, 'success');
+                    loadPersonnelManagementTable();
+                    updateKPI();
+                } else {
+                    alertEl.removeClass('d-none alert-success').addClass('alert-danger').text(res.message || 'İşlem gerçekleştirilemedi.');
+                }
+            } catch (e) {
+                alertEl.removeClass('d-none alert-success').addClass('alert-danger').text('Sunucu bağlantı hatası: ' + e.message);
+            } finally {
+                submitBtn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> <span id="p-form-btn-text">Kaydet</span>');
+            }
+        }
+
+        // Personel Silme
+        async function deletePersonel(id, name) {
+            const confirmed = confirm(`DİKKAT: "${name}" isimli personeli sistemden silmek istediğinize emin misiniz?\n\nBu işlem personelin tüm PDKS yetkilerini kaldırır.`);
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch('api/personel.php?action=delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                });
+                const res = await response.json();
+
+                if (res.status) {
+                    showPersonelTableAlert('<i class="fa-solid fa-trash-can me-1"></i> ' + res.message, 'success');
+                    loadPersonnelManagementTable();
+                    updateKPI();
+                } else {
+                    alert('Silme işlemi başarısız: ' + (res.message || 'Bilinmeyen hata'));
+                }
+            } catch (e) {
+                alert('Silme sırasında sunucu hatası oluştu: ' + e.message);
+            }
+        }
+
+        // Personel Durum Değiştirme (Aktif / Pasif)
+        async function togglePersonelStatus(id, name) {
+            try {
+                const response = await fetch('api/personel.php?action=toggle_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                });
+                const res = await response.json();
+
+                if (res.status) {
+                    showPersonelTableAlert('<i class="fa-solid fa-arrows-rotate me-1"></i> ' + res.message, 'info');
+                    loadPersonnelManagementTable();
+                } else {
+                    alert('Durum güncelleme hatası: ' + (res.message || 'Hata oluştu'));
+                }
+            } catch (e) {
+                alert('Durum güncellenirken hata oluştu: ' + e.message);
+            }
+        }
+
         $(document).ready(function() {
             // DataTables İlklendirme (Canlı Akış)
             dataTableInstance = $('#recent-passes-table').DataTable({
@@ -1366,6 +1831,8 @@ try {
                     dataTableInstance.search(this.value).draw();
                 } else if (currentActiveTab === 'hours' && workHoursDataTableInstance) {
                     workHoursDataTableInstance.search(this.value).draw();
+                } else if (currentActiveTab === 'personel' && personnelDataTableInstance) {
+                    personnelDataTableInstance.search(this.value).draw();
                 }
             });
 
