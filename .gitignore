@@ -1,0 +1,8 @@
+# IDE & System Files
+.DS_Store
+.vscode/
+.idea/
+*.log
+
+# Temp / Local Config
+*.tmp

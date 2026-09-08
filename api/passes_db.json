@@ -1,0 +1,121 @@
+[
+    {
+        "id": "pass_6a9ebf0dd9e55",
+        "sicil_no": "EMP1004",
+        "ad_soyad": "Ahmet Yılmaz",
+        "departman": "Yazılım & AR-GE",
+        "eposta": "ahmet@siberkon.com",
+        "islem_turu": "giris",
+        "islem_saati": "13:41:33",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_5",
+        "user_id": 2,
+        "sicil_no": "PER-0002",
+        "ad_soyad": "Ahmet Yılmaz",
+        "departman": "Yazılım & AR-GE",
+        "eposta": "ahmet@siberkon.com",
+        "islem_turu": "cikis",
+        "islem_saati": "14:14:58",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_6",
+        "user_id": 2,
+        "sicil_no": "PER-0002",
+        "ad_soyad": "Ahmet Yılmaz",
+        "departman": "Yazılım & AR-GE",
+        "eposta": "ahmet@siberkon.com",
+        "islem_turu": "cikis",
+        "islem_saati": "14:15:02",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_7",
+        "user_id": 2,
+        "sicil_no": "PER-0002",
+        "ad_soyad": "Ahmet Yılmaz",
+        "departman": "Yazılım & AR-GE",
+        "eposta": "ahmet@siberkon.com",
+        "islem_turu": "giris",
+        "islem_saati": "17:15:27",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_8",
+        "user_id": 2,
+        "sicil_no": "PER-0002",
+        "ad_soyad": "Ahmet Yılmaz",
+        "departman": "Yazılım & AR-GE",
+        "eposta": "ahmet@siberkon.com",
+        "islem_turu": "cikis",
+        "islem_saati": "17:15:28",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_9",
+        "user_id": 1,
+        "sicil_no": "PER-0001",
+        "ad_soyad": "Admin Yöneticisi",
+        "departman": "Bilgi İşlem & Güvenlik",
+        "eposta": "admin@siberkon.com",
+        "islem_turu": "giris",
+        "islem_saati": "17:19:00",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_10",
+        "user_id": 2,
+        "sicil_no": "PER-0002",
+        "ad_soyad": "Ahmet Yılmaz",
+        "departman": "Yazılım & AR-GE",
+        "eposta": "ahmet@siberkon.com",
+        "islem_turu": "giris",
+        "islem_saati": "17:19:37",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_11",
+        "user_id": 1,
+        "sicil_no": "PER-0001",
+        "ad_soyad": "Admin Yöneticisi",
+        "departman": "Bilgi İşlem & Güvenlik",
+        "eposta": "admin@siberkon.com",
+        "islem_turu": "cikis",
+        "islem_saati": "17:19:47",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_12",
+        "user_id": 1,
+        "sicil_no": "PER-0001",
+        "ad_soyad": "Admin Yöneticisi",
+        "departman": "Bilgi İşlem & Güvenlik",
+        "eposta": "admin@siberkon.com",
+        "islem_turu": "giris",
+        "islem_saati": "17:19:54",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    },
+    {
+        "id": "pass_13",
+        "user_id": 2,
+        "sicil_no": "PER-0002",
+        "ad_soyad": "Ahmet Yılmaz",
+        "departman": "Yazılım & AR-GE",
+        "eposta": "ahmet@siberkon.com",
+        "islem_turu": "cikis",
+        "islem_saati": "17:23:42",
+        "islem_tarihi": "2026-09-07",
+        "kapi": "Turnike #01"
+    }
+]
