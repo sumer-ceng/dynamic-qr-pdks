@@ -1,7 +1,7 @@
 <?php
 /**
  * Siberkon PDKS - Kurumsal Yönetim & Raporlama Paneli
- * Aşama 5: Canlı Akış, KPI İstatistikleri ve Excel Rapor Motoru Entegrasyonu
+ * Aşama 5: Canlı Akış, KPI İstatistikleri, Excel Rapor Motoru ve Yönetici Master QR
  */
 session_start();
 
@@ -176,6 +176,19 @@ try {
             color: #FFFFFF;
             font-weight: 600;
             border-left: 3px solid #C5A880;
+        }
+
+        .nav-link-master-qr {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.28));
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #FDE68A !important;
+            font-weight: 700;
+        }
+
+        .nav-link-master-qr:hover {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.45));
+            color: #FFFFFF !important;
+            border-color: #F59E0B;
         }
 
         .sidebar-footer {
@@ -426,14 +439,14 @@ try {
                         <span>Personel Kimlik Kartı</span>
                     </a>
                 </li>
-                <li class="nav-item-custom">
-                    <a href="#" class="nav-link-custom text-warning font-weight-bold" onclick="openAdminMasterQrModal(); return false;">
-                        <i class="fa-solid fa-qrcode text-warning"></i>
-                        <span>Yönetici Master QR Kodu</span>
+                <li class="nav-item-custom mt-2">
+                    <a href="#" class="nav-link-custom nav-link-master-qr shadow-sm" onclick="openAdminMasterQrModal(); return false;">
+                        <i class="fa-solid fa-shield-halved text-warning fs-5"></i>
+                        <span>Yönetici Master QR</span>
                     </a>
                 </li>
 
-                <li class="menu-category">Resmi Kayıt & Rapor</li>
+                <li class="menu-category mt-2">Resmi Kayıt & Rapor</li>
                 <li class="nav-item-custom">
                     <a href="#" class="nav-link-custom" onclick="alert('Personel sicil kütüğü modülü aktiftir.'); return false;">
                         <i class="fa-solid fa-users"></i>
@@ -473,10 +486,6 @@ try {
                 </div>
 
                 <div class="top-actions d-flex align-items-center gap-3">
-                    <button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="openAdminMasterQrModal()" style="border-radius: 3px; font-size: 0.8rem;">
-                        <i class="fa-solid fa-qrcode me-1"></i> Master QR Göster
-                    </button>
-
                     <!-- Canlı Saat -->
                     <div class="clock-badge-top" id="top-live-clock">
                         <i class="fa-regular fa-clock me-1 text-secondary"></i> 00:00:00
@@ -497,10 +506,7 @@ try {
                         <h1 class="page-title">Kurumsal Devam & Geçiş Denetimi</h1>
                         <p class="page-subtitle">T.C. Mevzuat Standartlarında Canlı PDKS İzleme ve Raporlama Paneli</p>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="openAdminMasterQrModal()" style="border-radius: 3px; font-size: 0.82rem;">
-                            <i class="fa-solid fa-qrcode me-1"></i> Yönetici Master QR
-                        </button>
+                    <div>
                         <a href="scan.php" class="btn btn-primary btn-sm" style="background-color: var(--primary-navy); border-color: var(--primary-dark); border-radius: 3px; font-size: 0.82rem;">
                             <i class="fa-solid fa-camera me-1"></i> Turnike Terminalini Aç
                         </a>
@@ -685,9 +691,9 @@ try {
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeAdminMasterQrModal()"></button>
                 </div>
                 <div class="modal-body p-4 text-center bg-light">
-                    <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10 text-info-emphasis p-2 mb-3 rounded small">
+                    <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10 text-warning-emphasis p-2 mb-3 rounded small text-start">
                         <i class="fa-solid fa-shield-halved me-1"></i>
-                        Bu QR kod, terminal kamerasında <strong>Kamera İzni / Kiosk Kontrol Paneli</strong> açmak için kullanılır.
+                        Bu Master QR kod, kapı terminali kamerasında (<strong>scan.php</strong>) <strong>Kamerayı Başlatma / Durdurma ve Kiosk Kontrol Menüsü</strong> açmak için kullanılır.
                     </div>
 
                     <!-- QR Kod Çerçevesi -->
@@ -809,9 +815,10 @@ try {
                 }
             }, TICK);
         }
-        let dataTableInstance = null;
 
+        // ==============================================================================
         // 1. EXCEL DÖKÜMÜ İNDİRME (action=export_excel)
+        // ==============================================================================
         function exportToExcel() {
             const startDate = $('#filter-start-date').val() || '';
             const endDate = $('#filter-end-date').val() || '';
@@ -825,7 +832,9 @@ try {
             window.location.href = exportUrl;
         }
 
+        // ==============================================================================
         // 2. 4 KPI KARTINI GÜNCELLEME (action=kpi - Her 10 saniye)
+        // ==============================================================================
         async function updateKPI() {
             try {
                 const response = await fetch('api/raporlar.php?action=kpi');
@@ -842,7 +851,9 @@ try {
             }
         }
 
+        // ==============================================================================
         // 3. CANLI AKIŞ POLLING (action=live_feed - Her 3 saniye)
+        // ==============================================================================
         async function pollLiveFeed() {
             try {
                 const response = await fetch('api/raporlar.php?action=live_feed&last_id=' + lastFeedId);
