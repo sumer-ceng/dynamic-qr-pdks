@@ -70,6 +70,9 @@ try {
     <!-- DataTables Bootstrap 5 CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 
+    <!-- QRCode.js Library CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
         :root {
             --primary-navy: #1A365D;
@@ -423,6 +426,12 @@ try {
                         <span>Personel Kimlik Kartı</span>
                     </a>
                 </li>
+                <li class="nav-item-custom">
+                    <a href="#" class="nav-link-custom text-warning font-weight-bold" onclick="openAdminMasterQrModal(); return false;">
+                        <i class="fa-solid fa-qrcode text-warning"></i>
+                        <span>Yönetici Master QR Kodu</span>
+                    </a>
+                </li>
 
                 <li class="menu-category">Resmi Kayıt & Rapor</li>
                 <li class="nav-item-custom">
@@ -464,6 +473,10 @@ try {
                 </div>
 
                 <div class="top-actions d-flex align-items-center gap-3">
+                    <button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="openAdminMasterQrModal()" style="border-radius: 3px; font-size: 0.8rem;">
+                        <i class="fa-solid fa-qrcode me-1"></i> Master QR Göster
+                    </button>
+
                     <!-- Canlı Saat -->
                     <div class="clock-badge-top" id="top-live-clock">
                         <i class="fa-regular fa-clock me-1 text-secondary"></i> 00:00:00
@@ -484,7 +497,10 @@ try {
                         <h1 class="page-title">Kurumsal Devam & Geçiş Denetimi</h1>
                         <p class="page-subtitle">T.C. Mevzuat Standartlarında Canlı PDKS İzleme ve Raporlama Paneli</p>
                     </div>
-                    <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="openAdminMasterQrModal()" style="border-radius: 3px; font-size: 0.82rem;">
+                            <i class="fa-solid fa-qrcode me-1"></i> Yönetici Master QR
+                        </button>
                         <a href="scan.php" class="btn btn-primary btn-sm" style="background-color: var(--primary-navy); border-color: var(--primary-dark); border-radius: 3px; font-size: 0.82rem;">
                             <i class="fa-solid fa-camera me-1"></i> Turnike Terminalini Aç
                         </a>
@@ -652,6 +668,54 @@ try {
 
     </div>
 
+    <!-- YÖNETİCİ MASTER QR MODALI (Kamera Yetkilendirme & Kiosk Kontrolü) -->
+    <div class="modal fade" id="adminMasterQrModal" tabindex="-1" aria-labelledby="adminMasterQrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+                <div class="modal-header text-white p-3" style="background-color: var(--primary-navy);">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-1 bg-white rounded d-flex align-items-center justify-content-center">
+                            <img src="assets/img/logo.png" alt="Siberkon Logo" height="28">
+                        </div>
+                        <div>
+                            <h6 class="modal-title fw-bold text-white mb-0" id="adminMasterQrModalLabel">Yönetici Master QR Kodu</h6>
+                            <small class="text-white-50" style="font-size: 0.72rem;">Kiosk Kamera İzni & Yönetim Menüsü</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeAdminMasterQrModal()"></button>
+                </div>
+                <div class="modal-body p-4 text-center bg-light">
+                    <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10 text-info-emphasis p-2 mb-3 rounded small">
+                        <i class="fa-solid fa-shield-halved me-1"></i>
+                        Bu QR kod, terminal kamerasında <strong>Kamera İzni / Kiosk Kontrol Paneli</strong> açmak için kullanılır.
+                    </div>
+
+                    <!-- QR Kod Çerçevesi -->
+                    <div class="qr-card-box p-3 bg-white rounded border shadow-sm d-inline-block mx-auto mb-3" style="border: 2px solid var(--primary-navy) !important;">
+                        <div id="admin-master-qrcode" class="d-flex justify-content-center align-items-center" style="width: 216px; height: 216px;"></div>
+                    </div>
+
+                    <!-- Progress Bar & Countdown -->
+                    <div class="w-100 px-3">
+                        <div class="progress mb-2" style="height: 6px; background-color: #e2e8f0;">
+                            <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" id="admin-qr-progress" role="progressbar" style="width: 100%;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small font-monospace">
+                            <span>HMAC-SHA256 CANLI</span>
+                            <span id="admin-qr-countdown" class="fw-bold text-primary">10.0 sn</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="fetchAdminMasterToken()">
+                        <i class="fa-solid fa-arrows-rotate me-1"></i> Şimdi Yenile
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="closeAdminMasterQrModal()">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- jQuery & Bootstrap 5.3 JS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -662,6 +726,89 @@ try {
 
     <script>
         let lastFeedId = <?= (int)$maxLastId ?>;
+        let dataTableInstance = null;
+
+        // ==============================================================================
+        // YÖNETİCİ MASTER QR KODU İŞLEMLERİ (Kiosk Kamera Yetkilendirmesi)
+        // ==============================================================================
+        let adminQrModalInstance = null;
+        let adminQrTimerId = null;
+        let adminRemainingMs = 10000;
+
+        function openAdminMasterQrModal() {
+            const modalEl = document.getElementById('adminMasterQrModal');
+            if (modalEl) {
+                if (!adminQrModalInstance) {
+                    adminQrModalInstance = new bootstrap.Modal(modalEl);
+                }
+                adminQrModalInstance.show();
+                fetchAdminMasterToken();
+                startAdminQrTimer();
+            }
+        }
+
+        function closeAdminMasterQrModal() {
+            if (adminQrTimerId) {
+                clearInterval(adminQrTimerId);
+                adminQrTimerId = null;
+            }
+            if (adminQrModalInstance) {
+                adminQrModalInstance.hide();
+            }
+        }
+
+        async function fetchAdminMasterToken() {
+            try {
+                const response = await fetch('api/get_my_token.php?action=token&_t=' + Date.now());
+                const data = await response.json();
+
+                if (data.status && data.qr_payload) {
+                    const qrContainer = document.getElementById('admin-master-qrcode');
+                    if (qrContainer) {
+                        qrContainer.innerHTML = '';
+                        new QRCode(qrContainer, {
+                            text: data.qr_payload,
+                            width: 216,
+                            height: 216,
+                            colorDark: "#0F2942",
+                            colorLight: "#FFFFFF",
+                            correctLevel: QRCode.CorrectLevel.L
+                        });
+                    }
+
+                    const kalanSec = typeof data.kalan_sure === 'number' ? data.kalan_sure : 10;
+                    adminRemainingMs = Math.max(1, kalanSec) * 1000;
+                    updateAdminQrProgress();
+                }
+            } catch (e) {
+                console.warn('Master QR token hatası:', e);
+            }
+        }
+
+        function updateAdminQrProgress() {
+            const pct = (adminRemainingMs / 10000) * 100;
+            const secStr = (adminRemainingMs / 1000).toFixed(1);
+
+            const pBar = document.getElementById('admin-qr-progress');
+            const countdownEl = document.getElementById('admin-qr-countdown');
+
+            if (pBar) pBar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+            if (countdownEl) countdownEl.textContent = secStr + ' sn';
+        }
+
+        function startAdminQrTimer() {
+            if (adminQrTimerId) clearInterval(adminQrTimerId);
+            
+            const TICK = 50;
+            adminQrTimerId = setInterval(() => {
+                adminRemainingMs -= TICK;
+                if (adminRemainingMs <= 0) {
+                    fetchAdminMasterToken();
+                } else {
+                    updateAdminQrProgress();
+                }
+            }, TICK);
+        }
         let dataTableInstance = null;
 
         // 1. EXCEL DÖKÜMÜ İNDİRME (action=export_excel)
