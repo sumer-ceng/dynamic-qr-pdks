@@ -428,11 +428,14 @@
                         <div class="panel-title">
                             <i class="fa-solid fa-camera me-1"></i> Canlı QR Doğrulama Kamerası
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="simulateTestScan(2)" title="Sistemdeki Test Kullanıcısı (Ahmet Yılmaz) için anlık QR okuma simülasyonu yapar">
-                                <i class="fa-solid fa-bolt me-1 text-warning"></i> Test QR Okut
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <button type="button" class="btn btn-outline-warning btn-sm fw-bold" onclick="simulateMasterScan()" title="Yönetici Master QR kodunu simüle eder ve Kiosk Kontrol Modalı açar">
+                                <i class="fa-solid fa-shield-halved me-1 text-warning"></i> Master QR Test
                             </button>
-                            <select id="camera-select-dropdown" class="form-select form-select-sm" style="max-width: 200px; font-size: 0.8rem; border-color: #CBD5E1;" title="Kamera Donanımı Seç">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="simulateTestScan(2)" title="Sistemdeki Test Personeli (Ahmet Yılmaz) için dinamik QR okuma simülasyonu yapar">
+                                <i class="fa-solid fa-bolt me-1 text-primary"></i> Personel QR Test
+                            </button>
+                            <select id="camera-select-dropdown" class="form-select form-select-sm" style="max-width: 190px; font-size: 0.8rem; border-color: #CBD5E1;" title="Kamera Donanımı Seç">
                                 <option value="">Kamera taranıyor...</option>
                             </select>
                             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchCamera()" title="Sonraki Kameraya Geç">
@@ -1174,7 +1177,19 @@
             }
         }
 
-        // Hızlı QR Okuma Testi (Kamera olmadan doğrudan backend'e gerçek token gönderir)
+        // Yönetici Master QR Test Simülasyonu (Kamera olmadan doğrudan Master QR kontrol modalını test eder)
+        async function simulateMasterScan() {
+            try {
+                const masterPayload = 'ADMIN:MASTER:SIBERKON_PDKS_ROOT_KEY';
+                console.log("⚡ Yönetici Master QR Simülasyonu Çalıştırılıyor:", masterPayload);
+                await processQrText(masterPayload);
+            } catch (err) {
+                console.error("Master Simülasyon Hatası:", err);
+                alert("Master simülasyon hatası: " + err.message);
+            }
+        }
+
+        // Hızlı Personel QR Okuma Testi (Kamera olmadan doğrudan backend'e dinamik TOTP token gönderir)
         async function simulateTestScan(userId = 2) {
             try {
                 // Test kullanıcısının güncel HMAC token'ını al

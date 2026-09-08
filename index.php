@@ -11,7 +11,6 @@ session_start();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>T.C. Siberkon Teknoloji - PDKS Kurumsal Sistem Portalı</title>
-    <link rel="icon" type="image/png" href="assets/img/logo.png">
 
     <!-- Google Fonts (Plus Jakarta Sans & Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

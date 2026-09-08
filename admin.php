@@ -685,15 +685,19 @@ try {
                         </div>
                         <div>
                             <h6 class="modal-title fw-bold text-white mb-0" id="adminMasterQrModalLabel">Yönetici Master QR Kodu</h6>
-                            <small class="text-white-50" style="font-size: 0.72rem;">Kiosk Kamera İzni & Yönetim Menüsü</small>
+                            <small class="text-white-50" style="font-size: 0.72rem;">Sabit Anahtar • Kapı Kiosk Kontrolü</small>
                         </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeAdminMasterQrModal()"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4 text-center bg-light">
-                    <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10 text-warning-emphasis p-2 mb-3 rounded small text-start">
+                    <div class="badge bg-warning text-dark px-3 py-1 mb-2 fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                        <i class="fa-solid fa-key me-1"></i> Sabit Yetkili Anahtarı (Süresiz)
+                    </div>
+
+                    <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10 text-info-emphasis p-2 mb-3 rounded small text-start">
                         <i class="fa-solid fa-shield-halved me-1"></i>
-                        Bu Master QR kod, kapı terminali kamerasında (<strong>scan.php</strong>) <strong>Kamerayı Başlatma / Durdurma ve Kiosk Kontrol Menüsü</strong> açmak için kullanılır.
+                        Bu Master QR kod <strong>sabittir ve 10 saniyede bir yenilenmez</strong>. Kapı terminali kamerasında (<strong>scan.php</strong>) okutulduğunda <strong>Kamerayı Durdurma / Başlatma ve Yönetici Kiosk Kontrol Paneli</strong>'ni açar.
                     </div>
 
                     <!-- QR Kod Çerçevesi -->
@@ -701,22 +705,15 @@ try {
                         <div id="admin-master-qrcode" class="d-flex justify-content-center align-items-center" style="width: 216px; height: 216px;"></div>
                     </div>
 
-                    <!-- Progress Bar & Countdown -->
-                    <div class="w-100 px-3">
-                        <div class="progress mb-2" style="height: 6px; background-color: #e2e8f0;">
-                            <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" id="admin-qr-progress" role="progressbar" style="width: 100%;"></div>
-                        </div>
-                        <div class="d-flex justify-content-between text-muted small font-monospace">
-                            <span>HMAC-SHA256 CANLI</span>
-                            <span id="admin-qr-countdown" class="fw-bold text-primary">10.0 sn</span>
-                        </div>
+                    <div class="p-2 bg-white rounded border border-slate-200 small font-monospace text-secondary text-truncate mb-2">
+                        <strong>Payload:</strong> <span id="master-payload-text">ADMIN:MASTER:SIBERKON_PDKS_ROOT_KEY</span>
                     </div>
                 </div>
                 <div class="modal-footer bg-white p-3 d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="fetchAdminMasterToken()">
-                        <i class="fa-solid fa-arrows-rotate me-1"></i> Şimdi Yenile
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="copyMasterPayload()">
+                        <i class="fa-regular fa-copy me-1"></i> Kodu Kopyala
                     </button>
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="closeAdminMasterQrModal()">Kapat</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>
                 </div>
             </div>
         </div>
@@ -735,11 +732,11 @@ try {
         let dataTableInstance = null;
 
         // ==============================================================================
-        // YÖNETİCİ MASTER QR KODU İŞLEMLERİ (Kiosk Kamera Yetkilendirmesi)
+        // SABİT YÖNETİCİ MASTER QR KODU (10 Saniyede Bir Yenilenmeyen Kalıcı Kiosk Anahtarı)
         // ==============================================================================
+        const MASTER_QR_PAYLOAD = "ADMIN:MASTER:SIBERKON_PDKS_ROOT_KEY";
         let adminQrModalInstance = null;
-        let adminQrTimerId = null;
-        let adminRemainingMs = 10000;
+        let qrGenerated = false;
 
         function openAdminMasterQrModal() {
             const modalEl = document.getElementById('adminMasterQrModal');
@@ -748,72 +745,28 @@ try {
                     adminQrModalInstance = new bootstrap.Modal(modalEl);
                 }
                 adminQrModalInstance.show();
-                fetchAdminMasterToken();
-                startAdminQrTimer();
-            }
-        }
-
-        function closeAdminMasterQrModal() {
-            if (adminQrTimerId) {
-                clearInterval(adminQrTimerId);
-                adminQrTimerId = null;
-            }
-            if (adminQrModalInstance) {
-                adminQrModalInstance.hide();
-            }
-        }
-
-        async function fetchAdminMasterToken() {
-            try {
-                const response = await fetch('api/get_my_token.php?action=token&_t=' + Date.now());
-                const data = await response.json();
-
-                if (data.status && data.qr_payload) {
-                    const qrContainer = document.getElementById('admin-master-qrcode');
-                    if (qrContainer) {
-                        qrContainer.innerHTML = '';
-                        new QRCode(qrContainer, {
-                            text: data.qr_payload,
-                            width: 216,
-                            height: 216,
-                            colorDark: "#0F2942",
-                            colorLight: "#FFFFFF",
-                            correctLevel: QRCode.CorrectLevel.L
-                        });
-                    }
-
-                    const kalanSec = typeof data.kalan_sure === 'number' ? data.kalan_sure : 10;
-                    adminRemainingMs = Math.max(1, kalanSec) * 1000;
-                    updateAdminQrProgress();
+                
+                // Sabit Master QR Kodunu Çiz
+                const qrContainer = document.getElementById('admin-master-qrcode');
+                if (qrContainer && !qrContainer.hasChildNodes()) {
+                    new QRCode(qrContainer, {
+                        text: MASTER_QR_PAYLOAD,
+                        width: 216,
+                        height: 216,
+                        colorDark: "#0F2942",
+                        colorLight: "#FFFFFF",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
                 }
-            } catch (e) {
-                console.warn('Master QR token hatası:', e);
             }
         }
 
-        function updateAdminQrProgress() {
-            const pct = (adminRemainingMs / 10000) * 100;
-            const secStr = (adminRemainingMs / 1000).toFixed(1);
-
-            const pBar = document.getElementById('admin-qr-progress');
-            const countdownEl = document.getElementById('admin-qr-countdown');
-
-            if (pBar) pBar.style.width = Math.max(0, Math.min(100, pct)) + '%';
-            if (countdownEl) countdownEl.textContent = secStr + ' sn';
-        }
-
-        function startAdminQrTimer() {
-            if (adminQrTimerId) clearInterval(adminQrTimerId);
-            
-            const TICK = 50;
-            adminQrTimerId = setInterval(() => {
-                adminRemainingMs -= TICK;
-                if (adminRemainingMs <= 0) {
-                    fetchAdminMasterToken();
-                } else {
-                    updateAdminQrProgress();
-                }
-            }, TICK);
+        function copyMasterPayload() {
+            navigator.clipboard.writeText(MASTER_QR_PAYLOAD).then(() => {
+                alert("Master QR Kodu panoya kopyalandı:\n" + MASTER_QR_PAYLOAD);
+            }).catch(() => {
+                prompt("Master QR Kodu:", MASTER_QR_PAYLOAD);
+            });
         }
 
         // ==============================================================================
